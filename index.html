@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Apartment Sports Fest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+  <!-- SCREEN 1: PROFILE SETUP -->
+  <div id="screen-profile" class="screen active">
+    <div class="screen-inner">
+      <div class="brand">
+        <div class="brand-icon">🏆</div>
+        <h1 class="brand-title">Sports Fest</h1>
+        <p class="brand-sub">Apartment Community · 2025</p>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Create your profile</h2>
+        <p class="card-desc">You only need to do this once. We'll remember you on this device.</p>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="p-name" placeholder="e.g. Ravi Kumar" autocomplete="off"/>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="p-phone" placeholder="e.g. 9876543210" maxlength="10"/>
+        </div>
+        <div class="form-group">
+          <label>Flat Number</label>
+          <input type="text" id="p-flat" placeholder="e.g. 4B, 12A" autocomplete="off"/>
+        </div>
+        <button class="btn-primary" onclick="saveProfile()">
+          <span>Save &amp; Continue</span>
+          <span class="btn-arrow">→</span>
+        </button>
+        <p class="form-note">No OTP needed. Your phone number is used only to track your registrations.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: SPORTS LIST -->
+  <div id="screen-sports" class="screen">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="greeting" id="greeting-name">Hi there!</span>
+        <span class="topbar-sub">Choose a sport to register</span>
+      </div>
+      <button class="my-regs-btn" onclick="showScreen('screen-registrations')">
+        My Entries
+        <span class="badge-count" id="reg-count-badge">0</span>
+      </button>
+    </div>
+    <div class="sports-grid" id="sports-grid"></div>
+  </div>
+
+  <!-- SCREEN 3: REGISTRATION FORM -->
+  <div id="screen-form" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="showScreen('screen-sports')">← Back</button>
+      <div class="sport-header">
+        <span class="sport-header-icon" id="form-sport-icon"></span>
+        <span class="sport-header-name" id="form-sport-name"></span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <div class="card">
+        <h2 class="card-title">Register for <span id="form-title-sport"></span></h2>
+        <p class="card-desc">You can register yourself or a family member.</p>
+        <div class="form-group">
+          <label>Registrant Name</label>
+          <input type="text" id="f-name" placeholder="Name of participant" autocomplete="off"/>
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="f-age" placeholder="Age" min="1" max="99"/>
+        </div>
+        <div class="form-group">
+          <label>Gender</label>
+          <div class="radio-group">
+            <label class="radio-opt"><input type="radio" name="gender" value="Male"/> Male</label>
+            <label class="radio-opt"><input type="radio" name="gender" value="Female"/> Female</label>
+            <label class="radio-opt"><input type="radio" name="gender" value="Other"/> Other</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Registrant Type</label>
+          <div class="radio-group">
+            <label class="radio-opt"><input type="radio" name="regtype" value="Self"/> Self</label>
+            <label class="radio-opt"><input type="radio" name="regtype" value="Kid"/> Kid</label>
+            <label class="radio-opt"><input type="radio" name="regtype" value="Family"/> Family</label>
+          </div>
+        </div>
+        <div class="phone-display">
+          <span class="phone-label">Registering from</span>
+          <span class="phone-value" id="form-phone-display"></span>
+          <span class="phone-flat" id="form-flat-display"></span>
+        </div>
+        <button class="btn-primary" onclick="submitRegistration()">
+          <span>Register Now</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: SUCCESS -->
+  <div id="screen-success" class="screen">
+    <div class="screen-inner center-content">
+      <div class="success-anim">
+        <div class="success-circle">
+          <span class="success-check">✓</span>
+        </div>
+      </div>
+      <h2 class="success-title">You're registered!</h2>
+      <p class="success-msg" id="success-msg">Your spot has been saved.</p>
+      <div class="success-actions">
+        <button class="btn-primary" onclick="showScreen('screen-registrations')">
+          View My Registrations
+        </button>
+        <button class="btn-secondary" onclick="showScreen('screen-sports')">
+          Register Another Sport
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: MY REGISTRATIONS -->
+  <div id="screen-registrations" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="showScreen('screen-sports')">← Back</button>
+      <div class="sport-header">
+        <span class="sport-header-name">My Registrations</span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total entries</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-sports">0</div>
+          <div class="stat-label">Sports</div>
+        </div>
+      </div>
+      <div id="reg-list" class="reg-list">
+        <div class="empty-state">No registrations yet. Go pick a sport!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
