@@ -55,6 +55,11 @@ const SPORTS = [
 // ── App state ──
 let currentSport = null;
 let userProfile  = null;
+let blockChart   = null;
+
+// ── Block graph config ──
+const BLOCKS       = ['A', 'B', 'C', 'D', 'E'];
+const BLOCK_COLORS = ['#0080ff', '#ff6a00', '#00e5a0', '#c84bff', '#f1c40f'];
 
 // ── Init on page load ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,11 +81,14 @@ function loadProfile() {
 async function saveProfile() {
   const name  = document.getElementById('p-name').value.trim();
   const phone = document.getElementById('p-phone').value.trim();
-  const flat  = document.getElementById('p-flat').value.trim();
+  const block = document.querySelector('input[name="p-block"]:checked')?.value;
+  const flatNo = document.getElementById('p-flat').value.trim();
+  const flat  = block && flatNo ? `${block}-${flatNo}` : '';
 
   if (!name)               return showToast('Please enter your name', true);
   if (phone.length < 10)   return showToast('Please enter a valid 10-digit phone number', true);
-  if (!flat)               return showToast('Please enter your flat number', true);
+  if (!block)              return showToast('Please select your block', true);
+  if (!flatNo)             return showToast('Please enter your flat number', true);
 
   showLoading(true);
   try {
@@ -131,15 +139,15 @@ function openRegistrationForm(sport) {
   document.getElementById('form-flat-display').textContent  = `Flat ${userProfile.flat}`;
   document.getElementById('f-name').value = '';
   document.getElementById('f-age').value  = '';
-  document.getElementById('f-gender').value = '';
   document.querySelectorAll('input[name="regtype"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="gender"]').forEach(r => r.checked = false);
   showScreen('screen-form');
 }
 
 async function submitRegistration() {
   const name    = document.getElementById('f-name').value.trim();
   const age     = document.getElementById('f-age').value.trim();
-  const gender  = document.getElementById('f-gender').value;
+  const gender  = document.querySelector('input[name="gender"]:checked')?.value;
   const regtype = document.querySelector('input[name="regtype"]:checked')?.value;
 
   if (!name)    return showToast('Please enter participant name', true);
@@ -223,12 +231,109 @@ async function loadRegCount() {
   } catch (e) { /* silently fail */ }
 }
 
+// ── Block-wise graph ──
+async function loadBlockGraph() {
+  const emptyEl = document.getElementById('graph-empty');
+  const wrapEl  = document.getElementById('graph-wrap');
+
+  showLoading(true);
+  try {
+    const snap = await getDocs(collection(db, 'registrations'));
+    const docs = snap.docs.map(d => d.data());
+
+    if (docs.length === 0) {
+      emptyEl.classList.remove('hidden');
+      document.querySelector('.graph-wrap').style.display = 'none';
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    document.querySelector('.graph-wrap').style.display = 'block';
+
+    // tally: data[sportName][block] = count
+    const tally = {};
+    SPORTS.forEach(s => {
+      tally[s.name] = {};
+      BLOCKS.forEach(b => tally[s.name][b] = 0);
+    });
+    docs.forEach(d => {
+      const block = d.flat?.split('-')[0];
+      if (tally[d.sport] && BLOCKS.includes(block)) {
+        tally[d.sport][block]++;
+      }
+    });
+
+    // only show sports that have at least 1 registration
+    const activeSports = SPORTS.filter(s => BLOCKS.some(b => tally[s.name][b] > 0));
+
+    const labels   = activeSports.map(s => s.emoji + ' ' + s.name);
+    const datasets = BLOCKS.map((block, i) => ({
+      label: 'Block ' + block,
+      data: activeSports.map(s => tally[s.name][block]),
+      backgroundColor: BLOCK_COLORS[i],
+      borderRadius: 4,
+      borderSkipped: false,
+    }));
+
+    // build legend
+    const legendEl = document.getElementById('graph-legend');
+    legendEl.innerHTML = BLOCKS.map((b, i) =>
+      `<span class="legend-dot" style="background:${BLOCK_COLORS[i]}"></span><span class="legend-label">Block ${b}</span>`
+    ).join('');
+
+    if (blockChart) blockChart.destroy();
+
+    const ctx = document.getElementById('block-chart').getContext('2d');
+    // set canvas height based on number of sports
+    document.getElementById('block-chart').parentElement.style.height =
+      Math.max(320, activeSports.length * 52) + 'px';
+
+    blockChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => items[0].label,
+              label: item => ` Block ${item.dataset.label.split(' ')[1]}: ${item.raw} registrations`,
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: '#7aaccc', font: { family: 'Outfit' }, stepSize: 1 },
+            grid:  { color: 'rgba(0,140,255,0.08)' },
+            border:{ color: 'rgba(0,140,255,0.15)' },
+          },
+          y: {
+            stacked: true,
+            ticks: { color: '#e8f3ff', font: { family: 'Outfit', size: 12 } },
+            grid:  { display: false },
+            border:{ display: false },
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    showToast('Could not load graph data.', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
 // ── Navigation ──
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
   if (id === 'screen-registrations') loadRegistrations();
+  if (id === 'screen-graph')         loadBlockGraph();
 }
 
 // ── Helpers ──

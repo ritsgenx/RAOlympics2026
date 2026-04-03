@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -30,8 +31,18 @@
           <input type="tel" id="p-phone" placeholder="e.g. 9876543210" maxlength="10"/>
         </div>
         <div class="form-group">
+          <label>Block</label>
+          <div class="radio-group">
+            <label class="radio-opt"><input type="radio" name="p-block" value="A"/> A</label>
+            <label class="radio-opt"><input type="radio" name="p-block" value="B"/> B</label>
+            <label class="radio-opt"><input type="radio" name="p-block" value="C"/> C</label>
+            <label class="radio-opt"><input type="radio" name="p-block" value="D"/> D</label>
+            <label class="radio-opt"><input type="radio" name="p-block" value="E"/> E</label>
+          </div>
+        </div>
+        <div class="form-group">
           <label>Flat Number</label>
-          <input type="text" id="p-flat" placeholder="e.g. 4B, 12A" autocomplete="off"/>
+          <input type="text" id="p-flat" placeholder="e.g. 1104, 703" maxlength="4" autocomplete="off"/>
         </div>
         <button class="btn-primary" onclick="saveProfile()">
           <span>Save &amp; Continue</span>
@@ -49,10 +60,13 @@
         <span class="greeting" id="greeting-name">Hi there!</span>
         <span class="topbar-sub">Choose a sport to register</span>
       </div>
-      <button class="my-regs-btn" onclick="showScreen('screen-registrations')">
-        My Entries
-        <span class="badge-count" id="reg-count-badge">0</span>
-      </button>
+      <div class="topbar-actions">
+        <button class="my-regs-btn" onclick="showScreen('screen-registrations')">
+          My Entries
+          <span class="badge-count" id="reg-count-badge">0</span>
+        </button>
+        <button class="graph-btn" onclick="showScreen('screen-graph')" title="Block-wise Graph">📊</button>
+      </div>
     </div>
     <div class="sports-grid" id="sports-grid"></div>
   </div>
@@ -88,17 +102,10 @@
         </div>
         <div class="form-group">
           <label>Gender</label>
-          <div class="custom-select" id="gender-select">
-            <div class="custom-select-trigger" onclick="toggleDropdown('gender-select')">
-              <span id="gender-display">Select gender</span>
-              <span class="custom-select-arrow">›</span>
-            </div>
-            <div class="custom-select-options">
-              <div class="custom-select-option" onclick="selectOption('gender-select', 'Male', 'f-gender')">Male</div>
-              <div class="custom-select-option" onclick="selectOption('gender-select', 'Female', 'f-gender')">Female</div>
-            </div>
+          <div class="radio-group">
+            <label class="radio-opt"><input type="radio" name="gender" value="Male"/> Male</label>
+            <label class="radio-opt"><input type="radio" name="gender" value="Female"/> Female</label>
           </div>
-          <input type="hidden" id="f-gender"/>
         </div>      
         <div class="phone-display">
           <span class="phone-label">Registering from</span>
@@ -156,6 +163,24 @@
       <div id="reg-list" class="reg-list">
         <div class="empty-state">No registrations yet. Go pick a sport!</div>
       </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: BLOCK-WISE GRAPH -->
+  <div id="screen-graph" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="showScreen('screen-sports')">← Back</button>
+      <div class="sport-header">
+        <span class="sport-header-name">Block-wise Registrations</span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <p class="card-desc" style="margin-bottom:16px;">Total registrations per sport, broken down by block.</p>
+      <div class="graph-legend" id="graph-legend"></div>
+      <div class="graph-wrap">
+        <canvas id="block-chart"></canvas>
+      </div>
+      <div id="graph-empty" class="empty-state hidden">No registrations yet. Go pick a sport!</div>
     </div>
   </div>
 
