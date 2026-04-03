@@ -108,6 +108,10 @@
         <h3 class="details-rules-title">Format &amp; Rules</h3>
         <ul class="details-rules-list" id="det-rules"></ul>
       </div>
+      <div class="subcategory-section" id="subcategory-section" style="display:none;">
+        <p class="subcategory-title">Select Category</p>
+        <div class="subcategory-pills" id="subcategory-pills"></div>
+      </div>
       <button class="btn-primary details-register-btn" id="det-register-btn">
         <span id="det-register-label">Register →</span>
       </button>
@@ -150,6 +154,21 @@
             <label class="radio-opt"><input type="radio" name="gender" value="Female"/> Female</label>
           </div>
         </div>      
+        <div class="partner-section" id="partner-section" style="display:none;">
+          <p class="partner-section-title">Partner Details</p>
+          <div class="form-group">
+            <label>Partner Name</label>
+            <input type="text" id="f-partner-name" placeholder="Partner's full name" autocomplete="off"/>
+          </div>
+          <div class="form-group">
+            <label>Partner Phone</label>
+            <input type="tel" id="f-partner-phone" placeholder="e.g. 9876543210" maxlength="10"/>
+          </div>
+          <div class="form-group">
+            <label>Partner Block &amp; Flat</label>
+            <input type="text" id="f-partner-flat" placeholder="e.g. Block B, Flat 203" autocomplete="off"/>
+          </div>
+        </div>
         <div class="phone-display">
           <span class="phone-label">Registering from</span>
           <span class="phone-value" id="form-phone-display"></span>

@@ -44,6 +44,7 @@ const db  = getFirestore(app);
 const SPORTS = [
   {
     name: "Cricket", emoji: "🏏",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Main Ground",
     maxParticipants: "60 players (10 teams of 6)",
@@ -60,6 +61,7 @@ const SPORTS = [
   },
   {
     name: "Badminton", emoji: "🏸",
+    subcategories:   ["Singles", "Doubles", "Mixed Doubles"],
     datetime:        "TBD",
     venue:           "Badminton Court — Club House",
     maxParticipants: "32 players",
@@ -76,6 +78,7 @@ const SPORTS = [
   },
   {
     name: "Basketball", emoji: "🏀",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Basketball Court",
     maxParticipants: "40 players (8 teams of 5)",
@@ -92,6 +95,7 @@ const SPORTS = [
   },
   {
     name: "Football", emoji: "⚽",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Main Ground",
     maxParticipants: "70 players (7 teams of 10)",
@@ -108,6 +112,7 @@ const SPORTS = [
   },
   {
     name: "Swimming", emoji: "🏊",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Swimming Pool",
     maxParticipants: "50 swimmers",
@@ -124,6 +129,7 @@ const SPORTS = [
   },
   {
     name: "Table Tennis", emoji: "🏓",
+    subcategories:   ["Singles", "Doubles", "Mixed Doubles"],
     datetime:        "TBD",
     venue:           "Club House — Indoor Hall",
     maxParticipants: "32 players",
@@ -140,6 +146,7 @@ const SPORTS = [
   },
   {
     name: "Chess", emoji: "♟️",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Club House — Conference Room",
     maxParticipants: "32 players",
@@ -156,6 +163,7 @@ const SPORTS = [
   },
   {
     name: "Pickleball", emoji: "🎾",
+    subcategories:   ["Singles", "Doubles", "Mixed Doubles"],
     datetime:        "TBD",
     venue:           "Multi-purpose Court",
     maxParticipants: "32 players (16 pairs)",
@@ -172,6 +180,7 @@ const SPORTS = [
   },
   {
     name: "Track Events", emoji: "🏃",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Track / Main Ground",
     maxParticipants: "80 athletes",
@@ -188,6 +197,7 @@ const SPORTS = [
   },
   {
     name: "Kids Event", emoji: "🎈",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Garden / Ground",
     maxParticipants: "Unlimited (all kids welcome)",
@@ -204,6 +214,7 @@ const SPORTS = [
   },
   {
     name: "Open Mic", emoji: "🎤",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Amphitheatre / Club House Stage",
     maxParticipants: "20 acts",
@@ -220,6 +231,7 @@ const SPORTS = [
   },
   {
     name: "Yoga", emoji: "🧘",
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Terrace Garden / Open Lawn",
     maxParticipants: "40 participants",
@@ -237,9 +249,10 @@ const SPORTS = [
 ];
 
 // ── App state ──
-let currentSport = null;
-let userProfile  = null;
-let blockChart   = null;
+let currentSport       = null;
+let currentSubcategory = null;
+let userProfile        = null;
+let blockChart         = null;
 
 // ── Block graph config ──
 const BLOCKS       = ['A', 'B', 'C', 'D', 'E'];
@@ -315,6 +328,9 @@ function buildSportsGrid() {
 
 // ── Sport details ──
 function openSportDetails(sport) {
+  currentSport       = sport;
+  currentSubcategory = null;
+
   document.getElementById('det-emoji').textContent    = sport.emoji;
   document.getElementById('det-name').textContent     = sport.name;
   document.getElementById('det-datetime').textContent = sport.datetime;
@@ -326,25 +342,59 @@ function openSportDetails(sport) {
   document.getElementById('det-rules').innerHTML =
     sport.rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
 
-  document.getElementById('det-register-label').textContent = `Register for ${sport.name} →`;
-  document.getElementById('det-register-btn').onclick = () => openRegistrationForm(sport);
+  // ── Subcategory pills ──
+  const subSection = document.getElementById('subcategory-section');
+  const pillsEl    = document.getElementById('subcategory-pills');
+  if (sport.subcategories.length > 0) {
+    pillsEl.innerHTML = sport.subcategories.map(sub =>
+      `<button class="subcategory-pill" data-sub="${sub}">${sub}</button>`
+    ).join('');
+    pillsEl.querySelectorAll('.subcategory-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        pillsEl.querySelectorAll('.subcategory-pill').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentSubcategory = btn.dataset.sub;
+      });
+    });
+    subSection.style.display = 'block';
+  } else {
+    subSection.style.display = 'none';
+  }
 
-  currentSport = sport;
+  document.getElementById('det-register-label').textContent = `Register for ${sport.name} →`;
+  document.getElementById('det-register-btn').onclick = () => {
+    if (sport.subcategories.length > 0 && !currentSubcategory) {
+      showToast('Please select a category first', true);
+      return;
+    }
+    openRegistrationForm(sport);
+  };
+
   showScreen('screen-details');
 }
 
 // ── Registration form ──
 function openRegistrationForm(sport) {
   currentSport = sport;
+
+  const titleSuffix = currentSubcategory ? ` — ${currentSubcategory}` : '';
   document.getElementById('form-sport-icon').textContent    = sport.emoji;
   document.getElementById('form-sport-name').textContent    = sport.name;
-  document.getElementById('form-title-sport').textContent   = sport.name;
+  document.getElementById('form-title-sport').textContent   = sport.name + titleSuffix;
   document.getElementById('form-phone-display').textContent = userProfile.phone;
   document.getElementById('form-flat-display').textContent  = `Flat ${userProfile.flat}`;
-  document.getElementById('f-name').value = '';
-  document.getElementById('f-age').value  = '';
+
+  document.getElementById('f-name').value         = '';
+  document.getElementById('f-age').value           = '';
+  document.getElementById('f-partner-name').value  = '';
+  document.getElementById('f-partner-phone').value = '';
+  document.getElementById('f-partner-flat').value  = '';
   document.querySelectorAll('input[name="regtype"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="gender"]').forEach(r => r.checked = false);
+
+  const needsPartner = currentSubcategory === 'Doubles' || currentSubcategory === 'Mixed Doubles';
+  document.getElementById('partner-section').style.display = needsPartner ? 'block' : 'none';
+
   showScreen('screen-form');
 }
 
@@ -359,11 +409,24 @@ async function submitRegistration() {
   if (!gender)  return showToast('Please select gender', true);
   if (!regtype) return showToast('Please select registrant type', true);
 
+  // Partner fields (only when section is visible)
+  const partnerVisible = document.getElementById('partner-section').style.display !== 'none';
+  let partnerName = null, partnerPhone = null, partnerFlat = null;
+  if (partnerVisible) {
+    partnerName  = document.getElementById('f-partner-name').value.trim();
+    partnerPhone = document.getElementById('f-partner-phone').value.trim();
+    partnerFlat  = document.getElementById('f-partner-flat').value.trim();
+    if (!partnerName)            return showToast('Please enter partner name', true);
+    if (partnerPhone.length < 10) return showToast("Please enter partner's 10-digit phone", true);
+    if (!partnerFlat)            return showToast('Please enter partner block & flat', true);
+  }
+
   showLoading(true);
   try {
     await addDoc(collection(db, 'registrations'), {
       sport:        currentSport.name,
       sportEmoji:   currentSport.emoji,
+      subcategory:  currentSubcategory || null,
       name,
       age:          parseInt(age),
       gender,
@@ -371,10 +434,16 @@ async function submitRegistration() {
       phone:        userProfile.phone,
       flat:         userProfile.flat,
       registeredBy: userProfile.name,
+      partnerName,
+      partnerPhone,
+      partnerFlat,
       registeredAt: serverTimestamp()
     });
+    const sportLabel = currentSubcategory
+      ? `${currentSport.name} (${currentSubcategory})`
+      : currentSport.name;
     document.getElementById('success-msg').textContent =
-      `${name} is registered for ${currentSport.name}! See you at the event.`;
+      `${name} is registered for ${sportLabel}! See you at the event.`;
     loadRegCount();
     showScreen('screen-success');
   } catch (err) {
