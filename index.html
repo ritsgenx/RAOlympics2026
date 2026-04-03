@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Apartment Sports Fest</title>
+  <title>RA Olympics 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="css/style.css"/>
@@ -15,8 +15,8 @@
     <div class="screen-inner">
       <div class="brand">
         <div class="brand-icon">🏆</div>
-        <h1 class="brand-title">Sports Fest</h1>
-        <p class="brand-sub">Apartment Community · 2025</p>
+        <h1 class="brand-title">RA Olympics 2026</h1>
+        <p class="brand-sub">Let's play together!!</p>
       </div>
       <div class="card">
         <h2 class="card-title">Create your profile</h2>
@@ -88,12 +88,18 @@
         </div>
         <div class="form-group">
           <label>Gender</label>
-          <select id="f-gender">
-            <option value="" disabled selected>Select gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-        </div>        
+          <div class="custom-select" id="gender-select">
+            <div class="custom-select-trigger" onclick="toggleDropdown('gender-select')">
+              <span id="gender-display">Select gender</span>
+              <span class="custom-select-arrow">›</span>
+            </div>
+            <div class="custom-select-options">
+              <div class="custom-select-option" onclick="selectOption('gender-select', 'Male', 'f-gender')">Male</div>
+              <div class="custom-select-option" onclick="selectOption('gender-select', 'Female', 'f-gender')">Female</div>
+            </div>
+          </div>
+          <input type="hidden" id="f-gender"/>
+        </div>      
         <div class="phone-display">
           <span class="phone-label">Registering from</span>
           <span class="phone-value" id="form-phone-display"></span>
