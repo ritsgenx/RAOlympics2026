@@ -79,14 +79,6 @@
           <input type="number" id="f-age" placeholder="Age" min="1" max="99"/>
         </div>
         <div class="form-group">
-          <label>Gender</label>
-          <div class="radio-group">
-            <label class="radio-opt"><input type="radio" name="gender" value="Male"/> Male</label>
-            <label class="radio-opt"><input type="radio" name="gender" value="Female"/> Female</label>
-            <label class="radio-opt"><input type="radio" name="gender" value="Other"/> Other</label>
-          </div>
-        </div>
-        <div class="form-group">
           <label>Registrant Type</label>
           <div class="radio-group">
             <label class="radio-opt"><input type="radio" name="regtype" value="Self"/> Self</label>
@@ -94,6 +86,14 @@
             <label class="radio-opt"><input type="radio" name="regtype" value="Family"/> Family</label>
           </div>
         </div>
+        <div class="form-group">
+          <label>Gender</label>
+          <select id="f-gender">
+            <option value="" disabled selected>Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>        
         <div class="phone-display">
           <span class="phone-label">Registering from</span>
           <span class="phone-value" id="form-phone-display"></span>

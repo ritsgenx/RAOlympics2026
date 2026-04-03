@@ -131,7 +131,7 @@ function openRegistrationForm(sport) {
   document.getElementById('form-flat-display').textContent  = `Flat ${userProfile.flat}`;
   document.getElementById('f-name').value = '';
   document.getElementById('f-age').value  = '';
-  document.querySelectorAll('input[name="gender"]').forEach(r => r.checked = false);
+  document.getElementById('f-gender').value = '';
   document.querySelectorAll('input[name="regtype"]').forEach(r => r.checked = false);
   showScreen('screen-form');
 }
@@ -139,7 +139,7 @@ function openRegistrationForm(sport) {
 async function submitRegistration() {
   const name    = document.getElementById('f-name').value.trim();
   const age     = document.getElementById('f-age').value.trim();
-  const gender  = document.querySelector('input[name="gender"]:checked')?.value;
+  const gender  = document.getElementById('f-gender').value;
   const regtype = document.querySelector('input[name="regtype"]:checked')?.value;
 
   if (!name)    return showToast('Please enter participant name', true);
