@@ -234,7 +234,6 @@ async function loadRegCount() {
 // ── Block-wise graph ──
 async function loadBlockGraph() {
   const emptyEl = document.getElementById('graph-empty');
-  const wrapEl  = document.getElementById('graph-wrap');
 
   showLoading(true);
   try {
@@ -249,72 +248,76 @@ async function loadBlockGraph() {
     emptyEl.classList.add('hidden');
     document.querySelector('.graph-wrap').style.display = 'block';
 
-    // tally: data[sportName][block] = count
+    // tally: tally[block][sportName] = count
     const tally = {};
-    SPORTS.forEach(s => {
-      tally[s.name] = {};
-      BLOCKS.forEach(b => tally[s.name][b] = 0);
+    BLOCKS.forEach(b => {
+      tally[b] = {};
+      SPORTS.forEach(s => tally[b][s.name] = 0);
     });
     docs.forEach(d => {
       const block = d.flat?.split('-')[0];
-      if (tally[d.sport] && BLOCKS.includes(block)) {
-        tally[d.sport][block]++;
+      if (BLOCKS.includes(block) && tally[block][d.sport] !== undefined) {
+        tally[block][d.sport]++;
       }
     });
 
-    // only show sports that have at least 1 registration
-    const activeSports = SPORTS.filter(s => BLOCKS.some(b => tally[s.name][b] > 0));
+    // only include sports that have at least 1 registration across all blocks
+    const activeSports = SPORTS.filter(s => BLOCKS.some(b => tally[b][s.name] > 0));
 
-    const labels   = activeSports.map(s => s.emoji + ' ' + s.name);
-    const datasets = BLOCKS.map((block, i) => ({
-      label: 'Block ' + block,
-      data: activeSports.map(s => tally[s.name][block]),
-      backgroundColor: BLOCK_COLORS[i],
+    // X-axis = blocks, each dataset = one sport (stacked)
+    const sportColors = [
+      '#0080ff','#ff6a00','#00e5a0','#c84bff','#f1c40f',
+      '#ff4d6d','#40aaff','#ff9a3c','#00cfb4','#a78bfa',
+      '#fb923c','#34d399'
+    ];
+
+    const labels   = BLOCKS.map(b => 'Block ' + b);
+    const datasets = activeSports.map((s, i) => ({
+      label: s.emoji + ' ' + s.name,
+      data: BLOCKS.map(b => tally[b][s.name]),
+      backgroundColor: sportColors[i % sportColors.length],
       borderRadius: 4,
       borderSkipped: false,
     }));
 
-    // build legend
+    // build legend (one entry per active sport)
     const legendEl = document.getElementById('graph-legend');
-    legendEl.innerHTML = BLOCKS.map((b, i) =>
-      `<span class="legend-dot" style="background:${BLOCK_COLORS[i]}"></span><span class="legend-label">Block ${b}</span>`
+    legendEl.innerHTML = activeSports.map((s, i) =>
+      `<span class="legend-dot" style="background:${sportColors[i % sportColors.length]}"></span>` +
+      `<span class="legend-label">${s.emoji} ${s.name}</span>`
     ).join('');
 
     if (blockChart) blockChart.destroy();
 
+    document.querySelector('.graph-wrap').style.height = '340px';
     const ctx = document.getElementById('block-chart').getContext('2d');
-    // set canvas height based on number of sports
-    document.getElementById('block-chart').parentElement.style.height =
-      Math.max(320, activeSports.length * 52) + 'px';
 
     blockChart = new Chart(ctx, {
       type: 'bar',
       data: { labels, datasets },
       options: {
-        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title: items => items[0].label,
-              label: item => ` Block ${item.dataset.label.split(' ')[1]}: ${item.raw} registrations`,
+              label: item => ` ${item.dataset.label}: ${item.raw} registrations`,
             }
           }
         },
         scales: {
           x: {
             stacked: true,
-            ticks: { color: '#7aaccc', font: { family: 'Outfit' }, stepSize: 1 },
-            grid:  { color: 'rgba(0,140,255,0.08)' },
-            border:{ color: 'rgba(0,140,255,0.15)' },
+            ticks: { color: '#e8f3ff', font: { family: 'Outfit', size: 13 } },
+            grid:  { display: false },
+            border:{ display: false },
           },
           y: {
             stacked: true,
-            ticks: { color: '#e8f3ff', font: { family: 'Outfit', size: 12 } },
-            grid:  { display: false },
-            border:{ display: false },
+            ticks: { color: '#7aaccc', font: { family: 'Outfit' }, stepSize: 1 },
+            grid:  { color: 'rgba(0,140,255,0.08)' },
+            border:{ color: 'rgba(0,140,255,0.15)' },
           }
         }
       }
