@@ -71,10 +71,53 @@
     <div class="sports-grid" id="sports-grid"></div>
   </div>
 
-  <!-- SCREEN 3: REGISTRATION FORM -->
-  <div id="screen-form" class="screen">
+  <!-- SCREEN 3: SPORT DETAILS -->
+  <div id="screen-details" class="screen">
     <div class="form-topbar">
       <button class="back-btn" onclick="showScreen('screen-sports')">← Back</button>
+    </div>
+    <div class="details-hero">
+      <div class="details-hero-emoji" id="det-emoji"></div>
+      <h2 class="details-hero-name" id="det-name"></h2>
+      <p class="details-hero-sub">Avriti Olympics 2026</p>
+    </div>
+    <div class="screen-inner">
+      <div class="details-info-grid">
+        <div class="details-info-card">
+          <span class="details-info-label">Date &amp; Time</span>
+          <span class="details-info-value" id="det-datetime"></span>
+        </div>
+        <div class="details-info-card">
+          <span class="details-info-label">Venue</span>
+          <span class="details-info-value" id="det-venue"></span>
+        </div>
+        <div class="details-info-card">
+          <span class="details-info-label">Max Participants</span>
+          <span class="details-info-value" id="det-max"></span>
+        </div>
+        <div class="details-info-card">
+          <span class="details-info-label">Age Group</span>
+          <span class="details-info-value" id="det-age"></span>
+        </div>
+        <div class="details-info-card details-info-full">
+          <span class="details-info-label">Contact Person</span>
+          <span class="details-info-value" id="det-contact"></span>
+        </div>
+      </div>
+      <div class="details-rules-section">
+        <h3 class="details-rules-title">Format &amp; Rules</h3>
+        <ul class="details-rules-list" id="det-rules"></ul>
+      </div>
+      <button class="btn-primary details-register-btn" id="det-register-btn">
+        <span id="det-register-label">Register →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: REGISTRATION FORM -->
+  <div id="screen-form" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="showScreen('screen-details')">← Back</button>
       <div class="sport-header">
         <span class="sport-header-icon" id="form-sport-icon"></span>
         <span class="sport-header-name" id="form-sport-name"></span>
@@ -150,6 +193,9 @@
       </div>
     </div>
     <div class="screen-inner">
+      <div class="reg-greeting">
+        <span class="reg-greeting-text" id="reg-greeting-text"></span>
+      </div>
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-value" id="stat-total">0</div>

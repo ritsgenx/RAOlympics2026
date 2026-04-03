@@ -36,20 +36,204 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-// ── Sports list ──
+// ============================================================
+//  SPORTS DATA — Edit this section to update sport details
+//  Fields: name, emoji, datetime, venue, maxParticipants,
+//          ageGroup, contact, rules (array of strings)
+// ============================================================
 const SPORTS = [
-  { name: "Cricket",      emoji: "🏏" },
-  { name: "Badminton",    emoji: "🏸" },
-  { name: "Basketball",   emoji: "🏀" },
-  { name: "Football",     emoji: "⚽" },
-  { name: "Swimming",     emoji: "🏊" },
-  { name: "Table Tennis", emoji: "🏓" },
-  { name: "Chess",        emoji: "♟️" },
-  { name: "Pickleball",   emoji: "🎾" },
-  { name: "Track Events", emoji: "🏃" },
-  { name: "Kids Event",   emoji: "🎈" },
-  { name: "Open Mic",     emoji: "🎤" },
-  { name: "Yoga",         emoji: "🧘" },
+  {
+    name: "Cricket", emoji: "🏏",
+    datetime:        "TBD",
+    venue:           "Apartment Main Ground",
+    maxParticipants: "60 players (10 teams of 6)",
+    ageGroup:        "16 years & above",
+    contact:         "TBD",
+    rules: [
+      "6-a-side box cricket format (T10)",
+      "Tape ball only — no hard ball allowed",
+      "10 overs per innings, 2 overs max per bowler",
+      "Teams drawn block-wise on event day",
+      "No-ball and wide ball rules apply",
+      "Umpire's decision is final"
+    ]
+  },
+  {
+    name: "Badminton", emoji: "🏸",
+    datetime:        "TBD",
+    venue:           "Badminton Court — Club House",
+    maxParticipants: "32 players",
+    ageGroup:        "Open for all ages",
+    contact:         "TBD",
+    rules: [
+      "Singles and Doubles categories (knockout format)",
+      "Best of 3 sets, 21 points each",
+      "Shuttles provided by organizers",
+      "Separate Men, Women & Mixed Doubles brackets",
+      "Wear non-marking sports shoes on court",
+      "Players must report 10 min before scheduled time"
+    ]
+  },
+  {
+    name: "Basketball", emoji: "🏀",
+    datetime:        "TBD",
+    venue:           "Basketball Court",
+    maxParticipants: "40 players (8 teams of 5)",
+    ageGroup:        "16 years & above",
+    contact:         "TBD",
+    rules: [
+      "3-vs-3 half-court format (knockout)",
+      "10 minutes per game or first team to 21 points",
+      "Each team must have min 3, max 5 players",
+      "Ball will be provided by organizers",
+      "Standard NBA 3-point and foul rules apply",
+      "No pushing, charging or rough play"
+    ]
+  },
+  {
+    name: "Football", emoji: "⚽",
+    datetime:        "TBD",
+    venue:           "Apartment Main Ground",
+    maxParticipants: "70 players (7 teams of 10)",
+    ageGroup:        "16 years & above",
+    contact:         "TBD",
+    rules: [
+      "5-vs-5 format on a smaller pitch (knockout)",
+      "15 minutes each half with a 5-min break",
+      "Min 5, max 7 registered players per team",
+      "No offside rule — small-sided game format",
+      "Shin guards are strongly recommended",
+      "Yellow & red card rules apply"
+    ]
+  },
+  {
+    name: "Swimming", emoji: "🏊",
+    datetime:        "TBD",
+    venue:           "Apartment Swimming Pool",
+    maxParticipants: "50 swimmers",
+    ageGroup:        "Kids (8–14), Adults (15+), Seniors (50+)",
+    contact:         "TBD",
+    rules: [
+      "Individual freestyle races: 25m and 50m",
+      "4×25m block relay race for teams",
+      "Swimwear and swim cap are mandatory",
+      "Separate heats for each age category",
+      "Dive starts — no jumping or bombing",
+      "Lifeguard on duty throughout the event"
+    ]
+  },
+  {
+    name: "Table Tennis", emoji: "🏓",
+    datetime:        "TBD",
+    venue:           "Club House — Indoor Hall",
+    maxParticipants: "32 players",
+    ageGroup:        "8 years & above",
+    contact:         "TBD",
+    rules: [
+      "Singles knockout — separate Men & Women brackets",
+      "Best of 3 games, 11 points each game",
+      "Win by a margin of 2 points required",
+      "Bats and balls provided by organizers",
+      "Service must be behind the end line",
+      "Players must be ready at table when called"
+    ]
+  },
+  {
+    name: "Chess", emoji: "♟️",
+    datetime:        "TBD",
+    venue:           "Club House — Conference Room",
+    maxParticipants: "32 players",
+    ageGroup:        "6 years & above",
+    contact:         "TBD",
+    rules: [
+      "Swiss system — 5 rounds",
+      "Time control: 10 min + 5 sec increment per player",
+      "Boards and pieces provided by organizers",
+      "Separate Junior category (under 15 years)",
+      "Touch-move rule strictly enforced",
+      "Mobile phones must be switched off during play"
+    ]
+  },
+  {
+    name: "Pickleball", emoji: "🎾",
+    datetime:        "TBD",
+    venue:           "Multi-purpose Court",
+    maxParticipants: "32 players (16 pairs)",
+    ageGroup:        "12 years & above",
+    contact:         "TBD",
+    rules: [
+      "Doubles format — round robin then knockout",
+      "First to 11 points, must win by 2",
+      "Paddles and balls provided",
+      "Kitchen (non-volley zone) rules apply",
+      "Serve must be underhand and diagonal",
+      "Beginners welcome — brief coaching available"
+    ]
+  },
+  {
+    name: "Track Events", emoji: "🏃",
+    datetime:        "TBD",
+    venue:           "Apartment Track / Main Ground",
+    maxParticipants: "80 athletes",
+    ageGroup:        "Kids (8–14), Adults (15+), Seniors (50+)",
+    contact:         "TBD",
+    rules: [
+      "Events: 100m Sprint, 200m, 4×100m Relay",
+      "Heats run first; top finishers go to finals",
+      "False start results in disqualification",
+      "Age-category medals: Gold, Silver & Bronze",
+      "Wear running shoes and comfortable clothing",
+      "Athletes must report 15 min before their event"
+    ]
+  },
+  {
+    name: "Kids Event", emoji: "🎈",
+    datetime:        "TBD",
+    venue:           "Apartment Garden / Ground",
+    maxParticipants: "Unlimited (all kids welcome)",
+    ageGroup:        "5 to 14 years",
+    contact:         "TBD",
+    rules: [
+      "Events: Sack race, Lemon & spoon, Tug of war",
+      "Separate heats for age 5–9 and 10–14",
+      "Every participant receives a goodie bag",
+      "Parents and guardians must be present",
+      "No rough play — safety is the priority",
+      "Fun and participation valued over winning!"
+    ]
+  },
+  {
+    name: "Open Mic", emoji: "🎤",
+    datetime:        "TBD",
+    venue:           "Amphitheatre / Club House Stage",
+    maxParticipants: "20 acts",
+    ageGroup:        "Open for all ages",
+    contact:         "TBD",
+    rules: [
+      "Solo or group performances welcome",
+      "Max 5 minutes per act — strictly enforced",
+      "Accepted formats: Singing, Dance, Poetry, Stand-up",
+      "Sound system and microphone provided",
+      "No offensive or political content allowed",
+      "Register your act name & type at the time of sign-up"
+    ]
+  },
+  {
+    name: "Yoga", emoji: "🧘",
+    datetime:        "TBD",
+    venue:           "Terrace Garden / Open Lawn",
+    maxParticipants: "40 participants",
+    ageGroup:        "8 years & above",
+    contact:         "TBD",
+    rules: [
+      "Group session led by a certified instructor",
+      "Duration: 60 minutes",
+      "Bring your own yoga mat",
+      "Wear comfortable, stretchable clothing",
+      "Avoid heavy meals at least 2 hours before",
+      "Modifications available for beginners and seniors"
+    ]
+  },
 ];
 
 // ── App state ──
@@ -124,9 +308,29 @@ function buildSportsGrid() {
       <span class="sport-emoji">${sport.emoji}</span>
       <span class="sport-label">${sport.name}</span>
     `;
-    tile.addEventListener('click', () => openRegistrationForm(sport));
+    tile.addEventListener('click', () => openSportDetails(sport));
     grid.appendChild(tile);
   });
+}
+
+// ── Sport details ──
+function openSportDetails(sport) {
+  document.getElementById('det-emoji').textContent    = sport.emoji;
+  document.getElementById('det-name').textContent     = sport.name;
+  document.getElementById('det-datetime').textContent = sport.datetime;
+  document.getElementById('det-venue').textContent    = sport.venue;
+  document.getElementById('det-max').textContent      = sport.maxParticipants;
+  document.getElementById('det-age').textContent      = sport.ageGroup;
+  document.getElementById('det-contact').textContent  = sport.contact;
+
+  document.getElementById('det-rules').innerHTML =
+    sport.rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
+
+  document.getElementById('det-register-label').textContent = `Register for ${sport.name} →`;
+  document.getElementById('det-register-btn').onclick = () => openRegistrationForm(sport);
+
+  currentSport = sport;
+  showScreen('screen-details');
 }
 
 // ── Registration form ──
@@ -183,6 +387,10 @@ async function submitRegistration() {
 
 // ── My registrations ──
 async function loadRegistrations() {
+  const firstName = userProfile.name.split(' ')[0];
+  document.getElementById('reg-greeting-text').textContent =
+    `Here are all your entries, ${firstName}! 🏅`;
+
   const list = document.getElementById('reg-list');
   list.innerHTML = '<div class="empty-state">Loading...</div>';
   try {
@@ -353,6 +561,7 @@ function showToast(msg, isError = false) {
 }
 
 // ── Expose functions to HTML onclick handlers ──
-window.saveProfile           = saveProfile;
-window.submitRegistration    = submitRegistration;
-window.showScreen            = showScreen;
+window.saveProfile          = saveProfile;
+window.submitRegistration   = submitRegistration;
+window.showScreen           = showScreen;
+window.openRegistrationForm = openRegistrationForm;
