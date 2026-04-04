@@ -816,37 +816,71 @@ async function loadDashboard() {
   }
 }
 
-// ── PIC participant detail section ──
+// ── PIC participant detail section — sport selection buttons ──
 function renderPicSection(container, sports, allDocs) {
   const wrap = document.createElement('div');
   wrap.innerHTML = '<div class="admin-section-title teal">🟢 Your Sports — Participant Details</div>';
   sports.forEach(sportName => {
     const sportObj = SPORTS.find(s => s.name === sportName);
     const emoji    = sportObj ? sportObj.emoji : '🏆';
-    const regs     = allDocs.filter(d => d.sport === sportName);
-    const div      = document.createElement('div');
-    div.className  = 'pic-sport-section';
-    div.innerHTML  = `
-      <div class="pic-sport-heading">
-        <span>${emoji}</span><span>${sportName}</span>
-        <span class="reg-detail-tag">${regs.length} entr${regs.length === 1 ? 'y' : 'ies'}</span>
+    const count    = allDocs.filter(d => d.sport === sportName).length;
+    const btn      = document.createElement('button');
+    btn.className  = 'pic-sport-btn';
+    btn.innerHTML  = `
+      <span class="pic-sport-btn-emoji">${emoji}</span>
+      <div class="pic-sport-btn-info">
+        <div class="pic-sport-btn-title">List of participants for ${sportName}</div>
+        <div class="pic-sport-btn-count">${count} registration${count !== 1 ? 's' : ''}</div>
       </div>
-      ${regs.length === 0
-        ? '<p class="dash-loading">No registrations yet</p>'
-        : regs.map(d => `
-          <div class="reg-detail-card">
-            <div class="reg-detail-name">${d.name || '—'}</div>
-            <div class="reg-detail-tags">
-              <span class="reg-detail-tag">Age ${d.age || '—'}</span>
-              <span class="reg-detail-tag">${d.gender || '—'}</span>
-              <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
-              <span class="reg-detail-tag phone">${d.phone || '—'}</span>
-              ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
-            </div>
-          </div>`).join('')}`;
-    wrap.appendChild(div);
+      <span class="pic-sport-btn-arrow">→</span>`;
+    btn.addEventListener('click', () => openPicSportDetail(sportName));
+    wrap.appendChild(btn);
   });
   container.appendChild(wrap);
+}
+
+// ── PIC sport detail screen ──
+async function openPicSportDetail(sportName) {
+  const sportObj = SPORTS.find(s => s.name === sportName);
+  const emoji    = sportObj ? sportObj.emoji : '🏆';
+
+  document.getElementById('pic-sport-icon').textContent        = emoji;
+  document.getElementById('pic-sport-screen-name').textContent = sportName;
+
+  showScreen('screen-pic-sport');
+
+  const listEl = document.getElementById('pic-sport-list');
+  listEl.innerHTML = '<div class="empty-state">Loading…</div>';
+
+  showLoading(true);
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'registrations'), where('sport', '==', sportName))
+    );
+    const regs = snap.docs.map(d => d.data());
+
+    if (!regs.length) {
+      listEl.innerHTML = '<div class="empty-state">No registrations yet for this sport.</div>';
+      return;
+    }
+    listEl.innerHTML = regs.map(d => `
+      <div class="reg-detail-card">
+        <div class="reg-detail-name">${d.name || '—'}</div>
+        <div class="reg-detail-tags">
+          <span class="reg-detail-tag">Age ${d.age || '—'}</span>
+          <span class="reg-detail-tag">${d.gender || '—'}</span>
+          <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
+          <span class="reg-detail-tag phone">${d.phone || '—'}</span>
+          ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
+          ${d.regtype    ? `<span class="reg-detail-tag">${d.regtype}</span>`    : ''}
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<div class="empty-state">Could not load data. Try again.</div>';
+  } finally {
+    showLoading(false);
+  }
 }
 
 // ── Admin full data section ──
@@ -996,7 +1030,7 @@ function renderAdminUserList(users) {
   }
   listEl.innerHTML = users.map(u => {
     const role    = u.role || 'participant';
-    const picTags = role === 'pic' && u.picSports?.length
+    const picTags = (role === 'pic' || role === 'admin') && u.picSports?.length
       ? `<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${
           u.picSports.map(s =>
             `<span class="reg-detail-tag" style="color:#1D9E75;border:1px solid rgba(29,158,117,0.3)">${s}</span>`
@@ -1012,9 +1046,7 @@ function renderAdminUserList(users) {
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             <span class="role-badge ${role}">${role}</span>
-            ${role !== 'admin'
-              ? `<button class="user-card-expand" onclick="toggleUserExpand('${u.docId}')">Manage</button>`
-              : ''}
+            <button class="user-card-expand" onclick="toggleUserExpand('${u.docId}')">Manage</button>
           </div>
         </div>
         <div class="user-card-body" id="ubody-${u.docId}" style="display:none">
@@ -1026,7 +1058,23 @@ function renderAdminUserList(users) {
 
 function renderRoleManagement(u) {
   const role = u.role || 'participant';
-  if (role === 'admin') return '<p style="font-size:13px;color:var(--text3)">This is an admin account.</p>';
+  if (role === 'admin') {
+    const sportCheckboxes = SPORTS.map(s => {
+      const checked = (u.picSports || []).includes(s.name);
+      return `<label class="sport-checkbox-item${checked ? ' selected' : ''}" onclick="toggleSportCheckbox(this)">
+        <input type="checkbox" value="${s.name}"${checked ? ' checked' : ''} style="display:none"/>
+        ${s.emoji} ${s.name}
+      </label>`;
+    }).join('');
+    return `
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">
+        Admin account — assign your PIC sports below:
+      </p>
+      <div class="sport-checkbox-grid">${sportCheckboxes}</div>
+      <button class="btn-primary" style="margin-top:10px" onclick="saveUserRole('${u.docId}','admin')">
+        <span>Save My Sports</span>
+      </button>`;
+  }
 
   const sportCheckboxes = SPORTS.map(s => {
     const checked = (u.picSports || []).includes(s.name);
@@ -1085,22 +1133,29 @@ async function saveUserRole(docId, newRole) {
   if (!user) return;
 
   let picSports = [];
-  if (newRole === 'pic') {
+  if (newRole === 'pic' || newRole === 'admin') {
     const body = document.getElementById(`ubody-${docId}`);
     picSports  = Array.from(body.querySelectorAll('input[type="checkbox"]:checked'))
       .map(cb => cb.value);
-    if (!picSports.length) {
+    if (newRole === 'pic' && !picSports.length) {
       showToast('Select at least one sport for PIC', true);
       return;
     }
   }
 
+  // Admin keeps their role; only picSports is updated
+  const updateData = newRole === 'admin'
+    ? { picSports }
+    : { role: newRole, picSports };
+
   showLoading(true);
   try {
-    await updateDoc(doc(db, 'users', docId), { role: newRole, picSports });
-    showToast(newRole === 'pic'
-      ? `${user.name} is now PIC for: ${picSports.join(', ')}`
-      : `${user.name}'s role reset to participant`);
+    await updateDoc(doc(db, 'users', docId), updateData);
+    showToast(newRole === 'admin'
+      ? `Your PIC sports updated: ${picSports.length ? picSports.join(', ') : 'none'}`
+      : newRole === 'pic'
+        ? `${user.name} is now PIC for: ${picSports.join(', ')}`
+        : `${user.name}'s role reset to participant`);
     await loadAdminPanel();
   } catch (err) {
     console.error(err);
@@ -1148,6 +1203,7 @@ window.openRegistrationForm = openRegistrationForm;
 window.closeDeleteModal     = closeDeleteModal;
 window.confirmDelete        = confirmDelete;
 window.resetProfile         = resetProfile;
+window.openPicSportDetail   = openPicSportDetail;
 window.filterAdminUsers     = filterAdminUsers;
 window.toggleUserExpand     = toggleUserExpand;
 window.toggleSportCheckbox  = toggleSportCheckbox;

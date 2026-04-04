@@ -1310,3 +1310,31 @@ html, body {
 
 /* ── SCREEN PADDING FOR ADMIN SCREEN ── */
 #screen-admin .screen-inner { padding-bottom: 90px; }
+
+/* ── PIC SPORT BUTTONS ── */
+.pic-sport-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.pic-sport-btn:hover {
+  border-color: #1D9E75;
+  background: rgba(29,158,117,0.06);
+  transform: translateX(3px);
+}
+.pic-sport-btn:active { transform: scale(0.98); }
+.pic-sport-btn-emoji  { font-size: 32px; line-height: 1; flex-shrink: 0; }
+.pic-sport-btn-info   { flex: 1; min-width: 0; }
+.pic-sport-btn-title  { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.pic-sport-btn-count  { font-size: 11px; color: #1D9E75; font-weight: 500; }
+.pic-sport-btn-arrow  { font-size: 18px; color: var(--text3); flex-shrink: 0; }
