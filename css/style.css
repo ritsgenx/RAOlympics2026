@@ -1338,3 +1338,8 @@ html, body {
 .pic-sport-btn-title  { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
 .pic-sport-btn-count  { font-size: 11px; color: #1D9E75; font-weight: 500; }
 .pic-sport-btn-arrow  { font-size: 18px; color: var(--text3); flex-shrink: 0; }
+.admin-sport-btn:hover {
+  border-color: var(--accent);
+  background: rgba(0,128,255,0.06);
+}
+.admin-count { color: var(--accent); }

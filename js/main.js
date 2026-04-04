@@ -883,7 +883,7 @@ async function openPicSportDetail(sportName) {
   }
 }
 
-// ── Admin full data section ──
+// ── Admin full data section — sport selection buttons ──
 function renderAdminDataSection(container, allDocs) {
   const wrap = document.createElement('div');
   wrap.innerHTML = '<div class="admin-section-title gold">👑 All Sports — Full Registration Data</div>';
@@ -894,28 +894,20 @@ function renderAdminDataSection(container, allDocs) {
   });
   let hasData = false;
   SPORTS.forEach(sportObj => {
-    const regs = bySport[sportObj.name] || [];
-    if (!regs.length) return;
-    hasData = true;
-    const div     = document.createElement('div');
-    div.className = 'pic-sport-section';
-    div.innerHTML = `
-      <div class="pic-sport-heading">
-        <span>${sportObj.emoji}</span><span>${sportObj.name}</span>
-        <span class="reg-detail-tag">${regs.length} entr${regs.length === 1 ? 'y' : 'ies'}</span>
+    const count = (bySport[sportObj.name] || []).length;
+    if (!count) return;
+    hasData   = true;
+    const btn = document.createElement('button');
+    btn.className = 'pic-sport-btn admin-sport-btn';
+    btn.innerHTML = `
+      <span class="pic-sport-btn-emoji">${sportObj.emoji}</span>
+      <div class="pic-sport-btn-info">
+        <div class="pic-sport-btn-title">List of participants for ${sportObj.name}</div>
+        <div class="pic-sport-btn-count admin-count">${count} registration${count !== 1 ? 's' : ''}</div>
       </div>
-      ${regs.map(d => `
-        <div class="reg-detail-card">
-          <div class="reg-detail-name">${d.name || '—'}</div>
-          <div class="reg-detail-tags">
-            <span class="reg-detail-tag">Age ${d.age || '—'}</span>
-            <span class="reg-detail-tag">${d.gender || '—'}</span>
-            <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
-            <span class="reg-detail-tag phone">${d.phone || '—'}</span>
-            ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
-          </div>
-        </div>`).join('')}`;
-    wrap.appendChild(div);
+      <span class="pic-sport-btn-arrow">→</span>`;
+    btn.addEventListener('click', () => openPicSportDetail(sportObj.name));
+    wrap.appendChild(btn);
   });
   if (!hasData) wrap.innerHTML += '<p class="dash-loading">No registrations yet</p>';
   container.appendChild(wrap);
