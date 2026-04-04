@@ -995,18 +995,19 @@ function renderAdminUserList(users) {
     return;
   }
   listEl.innerHTML = users.map(u => {
-    const role        = u.role || 'participant';
-    const maskedPhone = u.phone ? u.phone.substring(0, 5) + '*****' : '—';
-    const picTags     = role === 'pic' && u.picSports?.length
-      ? `<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${
-          u.picSports.map(s => `<span class="reg-detail-tag">${s}</span>`).join('')}</div>`
+    const role    = u.role || 'participant';
+    const picTags = role === 'pic' && u.picSports?.length
+      ? `<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${
+          u.picSports.map(s =>
+            `<span class="reg-detail-tag" style="color:#1D9E75;border:1px solid rgba(29,158,117,0.3)">${s}</span>`
+          ).join('')}</div>`
       : '';
     return `
       <div class="user-mgmt-card" id="ucard-${u.docId}">
         <div class="user-card-header">
           <div>
             <div class="user-card-name">${u.name || '—'}</div>
-            <div class="user-card-sub">${maskedPhone} · Flat ${u.flat || '—'}</div>
+            <div class="user-card-sub">${u.phone || '—'} · Flat ${u.flat || '—'}</div>
             ${picTags}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
