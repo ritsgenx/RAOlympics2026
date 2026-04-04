@@ -300,11 +300,35 @@ async function saveProfile() {
 
   showLoading(true);
   try {
-    await addDoc(collection(db, 'users'), {
+    // Check if phone already registered — prevent
+    // duplicates and recover existing profiles
+    const existing = await getDocs(
+      query(collection(db, 'users'), where('phone', '==', phone))
+    );
+
+    if (!existing.empty) {
+      const docSnap = existing.docs[0];
+      const data    = docSnap.data();
+      userProfile   = {
+        name:      data.name,
+        phone:     data.phone,
+        flat:      data.flat,
+        role:      data.role      ?? null,
+        picSports: data.picSports ?? [],
+        docId:     docSnap.id,
+      };
+      localStorage.setItem('sportsFestProfile', JSON.stringify(userProfile));
+      showLoading(false);
+      showToast(`Welcome back, ${data.name.split(' ')[0]}! Your profile was found.`, false);
+      enterApp();
+      return;
+    }
+
+    const docRef = await addDoc(collection(db, 'users'), {
       name, phone, flat,
       createdAt: serverTimestamp()
     });
-    userProfile = { name, phone, flat };
+    userProfile = { name, phone, flat, docId: docRef.id };
     localStorage.setItem('sportsFestProfile', JSON.stringify(userProfile));
     enterApp();
   } catch (err) {
@@ -787,6 +811,22 @@ function showToast(msg, isError = false) {
   _toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
 }
 
+// ── Reset profile ──
+let _resetPending = false;
+let _resetTimer   = null;
+function resetProfile() {
+  if (!_resetPending) {
+    _resetPending = true;
+    showToast('Are you sure? Tap again to confirm', false);
+    _resetTimer = setTimeout(() => { _resetPending = false; }, 3000);
+  } else {
+    clearTimeout(_resetTimer);
+    _resetPending = false;
+    localStorage.clear();
+    window.location.reload();
+  }
+}
+
 // ── Expose functions to HTML onclick handlers ──
 window.saveProfile          = saveProfile;
 window.submitRegistration   = submitRegistration;
@@ -795,3 +835,4 @@ window.switchTab            = switchTab;
 window.openRegistrationForm = openRegistrationForm;
 window.closeDeleteModal     = closeDeleteModal;
 window.confirmDelete        = confirmDelete;
+window.resetProfile         = resetProfile;
