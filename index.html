@@ -60,13 +60,6 @@
         <span class="greeting" id="greeting-name">Hi there!</span>
         <span class="topbar-sub">Choose a sport to register</span>
       </div>
-      <div class="topbar-actions">
-        <button class="my-regs-btn" onclick="showScreen('screen-registrations')">
-          My Entries
-          <span class="badge-count" id="reg-count-badge">0</span>
-        </button>
-        <button class="graph-btn" onclick="showScreen('screen-graph')" title="Block-wise Graph">📊</button>
-      </div>
     </div>
     <div class="sports-grid" id="sports-grid"></div>
   </div>
@@ -74,7 +67,7 @@
   <!-- SCREEN 3: SPORT DETAILS -->
   <div id="screen-details" class="screen">
     <div class="form-topbar">
-      <button class="back-btn" onclick="showScreen('screen-sports')">← Back</button>
+      <button class="back-btn" onclick="switchTab('home')">← Back</button>
     </div>
     <div class="details-hero">
       <div class="details-hero-emoji" id="det-emoji"></div>
@@ -84,28 +77,33 @@
     <div class="screen-inner">
       <div class="details-info-grid">
         <div class="details-info-card">
+          <span class="details-info-icon">🗓️</span>
           <span class="details-info-label">Date &amp; Time</span>
           <span class="details-info-value" id="det-datetime"></span>
         </div>
         <div class="details-info-card">
+          <span class="details-info-icon">📍</span>
           <span class="details-info-label">Venue</span>
           <span class="details-info-value" id="det-venue"></span>
         </div>
         <div class="details-info-card">
+          <span class="details-info-icon">🏅</span>
           <span class="details-info-label">Max Participants</span>
           <span class="details-info-value" id="det-max"></span>
         </div>
         <div class="details-info-card">
+          <span class="details-info-icon">🎂</span>
           <span class="details-info-label">Age Group</span>
           <span class="details-info-value" id="det-age"></span>
         </div>
         <div class="details-info-card details-info-full">
-          <span class="details-info-label">Contact Person</span>
+          <span class="details-info-icon">📞</span>
+          <span class="details-info-label">Person in Charge</span>
           <span class="details-info-value" id="det-contact"></span>
         </div>
       </div>
       <div class="details-rules-section">
-        <h3 class="details-rules-title">Format &amp; Rules</h3>
+        <h3 class="details-rules-title">📋 Format &amp; Rules</h3>
         <ul class="details-rules-list" id="det-rules"></ul>
       </div>
       <div class="subcategory-section" id="subcategory-section" style="display:none;">
@@ -193,10 +191,10 @@
       <h2 class="success-title">You're registered!</h2>
       <p class="success-msg" id="success-msg">Your spot has been saved.</p>
       <div class="success-actions">
-        <button class="btn-primary" onclick="showScreen('screen-registrations')">
+        <button class="btn-primary" onclick="switchTab('mylist')">
           View My Registrations
         </button>
-        <button class="btn-secondary" onclick="showScreen('screen-sports')">
+        <button class="btn-secondary" onclick="switchTab('home')">
           Register Another Sport
         </button>
       </div>
@@ -248,6 +246,58 @@
       <div id="graph-empty" class="empty-state hidden">No registrations yet. Go pick a sport!</div>
     </div>
   </div>
+
+  <!-- SCREEN: DASHBOARD -->
+  <div id="screen-dashboard" class="screen">
+    <div class="dash-header">
+      <div class="dash-title">Block-wise Registrations</div>
+      <div class="dash-sub">Live data from all residents</div>
+    </div>
+    <div class="screen-inner">
+      <div class="dash-stats">
+        <div class="dash-stat-card">
+          <div class="dash-stat-val" id="dash-total">—</div>
+          <div class="dash-stat-label">Total Entries</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-val" id="dash-blocks">—</div>
+          <div class="dash-stat-label">Blocks</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-val" id="dash-sports">—</div>
+          <div class="dash-stat-label">Sports</div>
+        </div>
+      </div>
+      <div class="dash-section-title">Registrations by Block</div>
+      <div id="dash-chart"></div>
+      <div class="dash-section-title">Registrations by Sport</div>
+      <div id="dash-sport-chart"></div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <nav id="tab-bar" style="display:none;">
+    <div class="tab-bar-inner">
+      <div class="tab-item" data-tab="home" onclick="switchTab('home')">
+        <span class="tab-icon">🏠</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Home</span>
+      </div>
+      <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="tab-icon">📊</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Dashboard</span>
+      </div>
+      <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
+        <div class="tab-icon-wrap">
+          <span class="tab-icon">📋</span>
+          <span class="tab-badge" id="tab-mylist-badge"></span>
+        </div>
+        <span class="tab-dot"></span>
+        <span class="tab-label">My List</span>
+      </div>
+    </div>
+  </nav>
 
   <!-- LOADING OVERLAY -->
   <div id="loading" class="loading-overlay hidden">

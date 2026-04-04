@@ -254,6 +254,13 @@ let currentSubcategory = null;
 let userProfile        = null;
 let blockChart         = null;
 
+// ── Subcategory icon map ──
+const SUBCATEGORY_ICONS = {
+  'Singles':       { emoji: '👤', desc: 'Play solo' },
+  'Doubles':       { emoji: '👥', desc: 'Same gender pair' },
+  'Mixed Doubles': { emoji: '🔀', desc: 'Mixed gender pair' },
+};
+
 // ── Block graph config ──
 const BLOCKS       = ['A', 'B', 'C', 'D', 'E'];
 const BLOCK_COLORS = ['#0080ff', '#ff6a00', '#00e5a0', '#c84bff', '#f1c40f'];
@@ -307,8 +314,8 @@ async function saveProfile() {
 function enterApp() {
   document.getElementById('greeting-name').textContent =
     `Hi, ${userProfile.name.split(' ')[0]}! 👋`;
-  loadRegCount();
-  showScreen('screen-sports');
+  updateMyListBadge();
+  switchTab('home');
 }
 
 // ── Sports grid ──
@@ -346,9 +353,15 @@ function openSportDetails(sport) {
   const subSection = document.getElementById('subcategory-section');
   const pillsEl    = document.getElementById('subcategory-pills');
   if (sport.subcategories.length > 0) {
-    pillsEl.innerHTML = sport.subcategories.map(sub =>
-      `<button class="subcategory-pill" data-sub="${sub}">${sub}</button>`
-    ).join('');
+    pillsEl.innerHTML = sport.subcategories.map(sub => {
+      const meta = SUBCATEGORY_ICONS[sub] || { emoji: '🎯', desc: '' };
+      return `
+        <button class="subcategory-pill" data-sub="${sub}">
+          <span class="subcategory-pill-icon">${meta.emoji}</span>
+          <span class="subcategory-pill-label">${sub}</span>
+          <span class="subcategory-pill-desc">${meta.desc}</span>
+        </button>`;
+    }).join('');
     pillsEl.querySelectorAll('.subcategory-pill').forEach(btn => {
       btn.addEventListener('click', () => {
         pillsEl.querySelectorAll('.subcategory-pill').forEach(b => b.classList.remove('selected'));
@@ -444,7 +457,7 @@ async function submitRegistration() {
       : currentSport.name;
     document.getElementById('success-msg').textContent =
       `${name} is registered for ${sportLabel}! See you at the event.`;
-    loadRegCount();
+    updateMyListBadge();
     showScreen('screen-success');
   } catch (err) {
     console.error(err);
@@ -500,11 +513,17 @@ async function loadRegistrations() {
   }
 }
 
-async function loadRegCount() {
+async function updateMyListBadge() {
   try {
     const q    = query(collection(db, 'registrations'), where('phone', '==', userProfile.phone));
     const snap = await getDocs(q);
-    document.getElementById('reg-count-badge').textContent = snap.size;
+    const badge = document.getElementById('tab-mylist-badge');
+    if (snap.size > 0) {
+      badge.textContent   = snap.size;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
   } catch (e) { /* silently fail */ }
 }
 
@@ -607,13 +626,109 @@ async function loadBlockGraph() {
   }
 }
 
+// ── Dashboard ──
+async function loadDashboard() {
+  const chartEl      = document.getElementById('dash-chart');
+  const sportChartEl = document.getElementById('dash-sport-chart');
+  chartEl.innerHTML      = '<p class="dash-loading">Loading...</p>';
+  sportChartEl.innerHTML = '';
+  document.getElementById('dash-total').textContent  = '—';
+  document.getElementById('dash-blocks').textContent = '—';
+  document.getElementById('dash-sports').textContent = '—';
+
+  try {
+    const snap = await getDocs(collection(db, 'registrations'));
+    const docs = snap.docs.map(d => d.data());
+
+    if (docs.length === 0) {
+      document.getElementById('dash-total').textContent  = '0';
+      document.getElementById('dash-blocks').textContent = '0';
+      document.getElementById('dash-sports').textContent = '0';
+      chartEl.innerHTML = '<div class="empty-state">No registrations yet. Go pick a sport!</div>';
+      return;
+    }
+
+    // Extract block — flat is stored as "A-1104"
+    function extractBlock(flat) {
+      if (!flat) return '?';
+      const first = flat.charAt(0).toUpperCase();
+      return (first >= 'A' && first <= 'Z') ? first : '?';
+    }
+
+    const blockCounts = {};
+    const sportCounts = {};
+    docs.forEach(d => {
+      const b = extractBlock(d.flat);
+      blockCounts[b] = (blockCounts[b] || 0) + 1;
+      const s = d.sport || 'Unknown';
+      sportCounts[s] = (sportCounts[s] || 0) + 1;
+    });
+
+    const validBlocks = Object.keys(blockCounts).filter(b => b !== '?');
+    document.getElementById('dash-total').textContent  = docs.length;
+    document.getElementById('dash-blocks').textContent = validBlocks.length;
+    document.getElementById('dash-sports').textContent = Object.keys(sportCounts).length;
+
+    // Block chart
+    const sortedBlocks = Object.entries(blockCounts)
+      .filter(([b]) => b !== '?')
+      .sort(([a], [b]) => a.localeCompare(b));
+    const maxBlock = Math.max(...sortedBlocks.map(([, c]) => c), 1);
+    chartEl.innerHTML = sortedBlocks.map(([block, count]) => {
+      const pct = ((count / maxBlock) * 100).toFixed(1);
+      return `<div class="chart-row">
+        <div class="chart-label">Block ${block}</div>
+        <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
+        <div class="chart-count">${count}</div>
+      </div>`;
+    }).join('');
+
+    // Sport chart
+    const sortedSports = Object.entries(sportCounts).sort(([, a], [, b]) => b - a);
+    const maxSport = Math.max(...sortedSports.map(([, c]) => c), 1);
+    sportChartEl.innerHTML = sortedSports.map(([sport, count]) => {
+      const pct = ((count / maxSport) * 100).toFixed(1);
+      return `<div class="chart-row">
+        <div class="chart-label">${sport}</div>
+        <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
+        <div class="chart-count">${count}</div>
+      </div>`;
+    }).join('');
+
+    // Animate bars after paint
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.querySelectorAll('.chart-bar').forEach(bar => {
+          bar.style.width = bar.dataset.w;
+        });
+      }, 50);
+    });
+
+  } catch (err) {
+    console.error(err);
+    chartEl.innerHTML = '<div class="empty-state">Could not load data. Try again later.</div>';
+  }
+}
+
 // ── Navigation ──
+const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations'];
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
+  document.getElementById('tab-bar').style.display =
+    TAB_SCREENS.includes(id) ? 'flex' : 'none';
   if (id === 'screen-registrations') loadRegistrations();
+  if (id === 'screen-dashboard')     loadDashboard();
   if (id === 'screen-graph')         loadBlockGraph();
+}
+
+function switchTab(tabName) {
+  const screenMap = { home: 'screen-sports', dashboard: 'screen-dashboard', mylist: 'screen-registrations' };
+  showScreen(screenMap[tabName]);
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab-item[data-tab="${tabName}"]`).classList.add('active');
 }
 
 // ── Helpers ──
@@ -633,4 +748,5 @@ function showToast(msg, isError = false) {
 window.saveProfile          = saveProfile;
 window.submitRegistration   = submitRegistration;
 window.showScreen           = showScreen;
+window.switchTab            = switchTab;
 window.openRegistrationForm = openRegistrationForm;
