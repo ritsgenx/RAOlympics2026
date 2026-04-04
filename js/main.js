@@ -11,6 +11,7 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  updateDoc,
   query,
   where,
   serverTimestamp
@@ -250,6 +251,17 @@ const SPORTS = [
   },
 ];
 
+// ── Admin phone — change this to your phone number ──
+const ADMIN_PHONE = "9945648475";
+
+// NOTE: This is client-side role checking suitable for
+// a trusted community app. For production apps requiring
+// strict security, implement Firebase Security Rules
+// and Firebase Authentication.
+function isAdmin() {
+  return userProfile && userProfile.phone === ADMIN_PHONE;
+}
+
 // ── App state ──
 let currentSport       = null;
 let currentSubcategory = null;
@@ -276,10 +288,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Profile ──
-function loadProfile() {
+async function loadProfile() {
   const saved = localStorage.getItem('sportsFestProfile');
   if (saved) {
     userProfile = JSON.parse(saved);
+    // Refresh role and picSports from Firestore in case admin changed them
+    try {
+      const snap = await getDocs(
+        query(collection(db, 'users'), where('phone', '==', userProfile.phone))
+      );
+      if (!snap.empty) {
+        const docSnap = snap.docs[0];
+        const data    = docSnap.data();
+        userProfile.role      = data.role      ?? 'participant';
+        userProfile.picSports = data.picSports ?? [];
+        userProfile.docId     = docSnap.id;
+        localStorage.setItem('sportsFestProfile', JSON.stringify(userProfile));
+      }
+    } catch (e) { /* use cached role on network error */ }
     enterApp();
   } else {
     showScreen('screen-profile');
@@ -324,11 +350,13 @@ async function saveProfile() {
       return;
     }
 
-    const docRef = await addDoc(collection(db, 'users'), {
+    const newRole = phone === ADMIN_PHONE ? 'admin' : 'participant';
+    const docRef  = await addDoc(collection(db, 'users'), {
       name, phone, flat,
+      role: newRole, picSports: [],
       createdAt: serverTimestamp()
     });
-    userProfile = { name, phone, flat, docId: docRef.id };
+    userProfile = { name, phone, flat, role: newRole, picSports: [], docId: docRef.id };
     localStorage.setItem('sportsFestProfile', JSON.stringify(userProfile));
     enterApp();
   } catch (err) {
@@ -342,8 +370,39 @@ async function saveProfile() {
 function enterApp() {
   document.getElementById('greeting-name').textContent =
     `Hi, ${userProfile.name.split(' ')[0]}! 👋`;
-  updateMyListBadge();
+  renderTabBar();
   switchTab('home');
+}
+
+// ── Tab bar renderer — called after profile loads so admin tab is conditional ──
+function renderTabBar() {
+  const inner = document.querySelector('.tab-bar-inner');
+  inner.innerHTML = `
+    <div class="tab-item" data-tab="home" onclick="switchTab('home')">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Home</span>
+    </div>
+    <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span class="tab-icon">📊</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Dashboard</span>
+    </div>
+    <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
+      <div class="tab-icon-wrap">
+        <span class="tab-icon">📋</span>
+        <span class="tab-badge" id="tab-mylist-badge"></span>
+      </div>
+      <span class="tab-dot"></span>
+      <span class="tab-label">My List</span>
+    </div>
+    ${isAdmin() ? `<div class="tab-item admin-tab" data-tab="admin" onclick="switchTab('admin')">
+      <span class="tab-icon">👑</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Admin</span>
+    </div>` : ''}
+  `;
+  updateMyListBadge();
 }
 
 // ── Sports grid ──
@@ -737,14 +796,99 @@ async function loadDashboard() {
       }, 50);
     });
 
+    // Role-based participant detail sections
+    const oldRoleSection = document.getElementById('dash-role-section');
+    if (oldRoleSection) oldRoleSection.remove();
+
+    const showPic   = userProfile.role === 'pic' && (userProfile.picSports || []).length > 0;
+    const showAdminData = isAdmin();
+    if (showPic || showAdminData) {
+      const roleSection = document.createElement('div');
+      roleSection.id = 'dash-role-section';
+      document.querySelector('#screen-dashboard .screen-inner').appendChild(roleSection);
+      if (showPic)       renderPicSection(roleSection, userProfile.picSports, docs);
+      if (showAdminData) renderAdminDataSection(roleSection, docs);
+    }
+
   } catch (err) {
     console.error(err);
     chartEl.innerHTML = '<div class="empty-state">Could not load data. Try again later.</div>';
   }
 }
 
+// ── PIC participant detail section ──
+function renderPicSection(container, sports, allDocs) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="admin-section-title teal">🟢 Your Sports — Participant Details</div>';
+  sports.forEach(sportName => {
+    const sportObj = SPORTS.find(s => s.name === sportName);
+    const emoji    = sportObj ? sportObj.emoji : '🏆';
+    const regs     = allDocs.filter(d => d.sport === sportName);
+    const div      = document.createElement('div');
+    div.className  = 'pic-sport-section';
+    div.innerHTML  = `
+      <div class="pic-sport-heading">
+        <span>${emoji}</span><span>${sportName}</span>
+        <span class="reg-detail-tag">${regs.length} entr${regs.length === 1 ? 'y' : 'ies'}</span>
+      </div>
+      ${regs.length === 0
+        ? '<p class="dash-loading">No registrations yet</p>'
+        : regs.map(d => `
+          <div class="reg-detail-card">
+            <div class="reg-detail-name">${d.name || '—'}</div>
+            <div class="reg-detail-tags">
+              <span class="reg-detail-tag">Age ${d.age || '—'}</span>
+              <span class="reg-detail-tag">${d.gender || '—'}</span>
+              <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
+              <span class="reg-detail-tag phone">${d.phone || '—'}</span>
+              ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
+            </div>
+          </div>`).join('')}`;
+    wrap.appendChild(div);
+  });
+  container.appendChild(wrap);
+}
+
+// ── Admin full data section ──
+function renderAdminDataSection(container, allDocs) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="admin-section-title gold">👑 All Sports — Full Registration Data</div>';
+  const bySport = {};
+  allDocs.forEach(d => {
+    if (!bySport[d.sport]) bySport[d.sport] = [];
+    bySport[d.sport].push(d);
+  });
+  let hasData = false;
+  SPORTS.forEach(sportObj => {
+    const regs = bySport[sportObj.name] || [];
+    if (!regs.length) return;
+    hasData = true;
+    const div     = document.createElement('div');
+    div.className = 'pic-sport-section';
+    div.innerHTML = `
+      <div class="pic-sport-heading">
+        <span>${sportObj.emoji}</span><span>${sportObj.name}</span>
+        <span class="reg-detail-tag">${regs.length} entr${regs.length === 1 ? 'y' : 'ies'}</span>
+      </div>
+      ${regs.map(d => `
+        <div class="reg-detail-card">
+          <div class="reg-detail-name">${d.name || '—'}</div>
+          <div class="reg-detail-tags">
+            <span class="reg-detail-tag">Age ${d.age || '—'}</span>
+            <span class="reg-detail-tag">${d.gender || '—'}</span>
+            <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
+            <span class="reg-detail-tag phone">${d.phone || '—'}</span>
+            ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
+          </div>
+        </div>`).join('')}`;
+    wrap.appendChild(div);
+  });
+  if (!hasData) wrap.innerHTML += '<p class="dash-loading">No registrations yet</p>';
+  container.appendChild(wrap);
+}
+
 // ── Navigation ──
-const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations'];
+const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations', 'screen-admin'];
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -755,13 +899,20 @@ function showScreen(id) {
   if (id === 'screen-registrations') loadRegistrations();
   if (id === 'screen-dashboard')     loadDashboard();
   if (id === 'screen-graph')         loadBlockGraph();
+  if (id === 'screen-admin')         loadAdminPanel();
 }
 
 function switchTab(tabName) {
-  const screenMap = { home: 'screen-sports', dashboard: 'screen-dashboard', mylist: 'screen-registrations' };
+  const screenMap = {
+    home:      'screen-sports',
+    dashboard: 'screen-dashboard',
+    mylist:    'screen-registrations',
+    admin:     'screen-admin'
+  };
   showScreen(screenMap[tabName]);
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab-item[data-tab="${tabName}"]`).classList.add('active');
+  const activeEl = document.querySelector(`.tab-item[data-tab="${tabName}"]`);
+  if (activeEl) activeEl.classList.add('active');
 }
 
 // ── Delete registration ──
@@ -793,6 +944,166 @@ async function confirmDelete() {
   } catch (err) {
     console.error(err);
     showToast('Could not delete. Please try again.', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── Admin panel ──
+let _adminAllUsers = [];
+
+async function loadAdminPanel() {
+  const listEl = document.getElementById('admin-user-list');
+  listEl.innerHTML = '<div class="empty-state">Loading…</div>';
+  document.getElementById('admin-stat-users').textContent = '—';
+  document.getElementById('admin-stat-pics').textContent  = '—';
+  document.getElementById('admin-stat-regs').textContent  = '—';
+  const searchEl = document.getElementById('admin-search');
+  if (searchEl) searchEl.value = '';
+
+  try {
+    const [usersSnap, regsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'registrations'))
+    ]);
+    _adminAllUsers = usersSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+    const totalPics = _adminAllUsers.filter(u => u.role === 'pic').length;
+
+    document.getElementById('admin-stat-users').textContent = _adminAllUsers.length;
+    document.getElementById('admin-stat-pics').textContent  = totalPics;
+    document.getElementById('admin-stat-regs').textContent  = regsSnap.size;
+    renderAdminUserList(_adminAllUsers);
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<div class="empty-state">Could not load users.</div>';
+  }
+}
+
+function filterAdminUsers() {
+  const q = (document.getElementById('admin-search').value || '').trim().toLowerCase();
+  const filtered = q
+    ? _adminAllUsers.filter(u =>
+        (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q))
+    : _adminAllUsers;
+  renderAdminUserList(filtered);
+}
+
+function renderAdminUserList(users) {
+  const listEl = document.getElementById('admin-user-list');
+  if (!users.length) {
+    listEl.innerHTML = '<div class="empty-state">No users found.</div>';
+    return;
+  }
+  listEl.innerHTML = users.map(u => {
+    const role        = u.role || 'participant';
+    const maskedPhone = u.phone ? u.phone.substring(0, 5) + '*****' : '—';
+    const picTags     = role === 'pic' && u.picSports?.length
+      ? `<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${
+          u.picSports.map(s => `<span class="reg-detail-tag">${s}</span>`).join('')}</div>`
+      : '';
+    return `
+      <div class="user-mgmt-card" id="ucard-${u.docId}">
+        <div class="user-card-header">
+          <div>
+            <div class="user-card-name">${u.name || '—'}</div>
+            <div class="user-card-sub">${maskedPhone} · Flat ${u.flat || '—'}</div>
+            ${picTags}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <span class="role-badge ${role}">${role}</span>
+            ${role !== 'admin'
+              ? `<button class="user-card-expand" onclick="toggleUserExpand('${u.docId}')">Manage</button>`
+              : ''}
+          </div>
+        </div>
+        <div class="user-card-body" id="ubody-${u.docId}" style="display:none">
+          ${renderRoleManagement(u)}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderRoleManagement(u) {
+  const role = u.role || 'participant';
+  if (role === 'admin') return '<p style="font-size:13px;color:var(--text3)">This is an admin account.</p>';
+
+  const sportCheckboxes = SPORTS.map(s => {
+    const checked = (u.picSports || []).includes(s.name);
+    return `<label class="sport-checkbox-item${checked ? ' selected' : ''}" onclick="toggleSportCheckbox(this)">
+      <input type="checkbox" value="${s.name}"${checked ? ' checked' : ''} style="display:none"/>
+      ${s.emoji} ${s.name}
+    </label>`;
+  }).join('');
+
+  if (role === 'participant') {
+    return `
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">
+        Current role: <span class="role-badge participant">participant</span>
+      </p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Select sports to assign as PIC:</p>
+      <div class="sport-checkbox-grid">${sportCheckboxes}</div>
+      <button class="btn-primary" style="margin-top:10px" onclick="saveUserRole('${u.docId}','pic')">
+        <span>Confirm PIC Role</span>
+      </button>`;
+  }
+  // role === 'pic'
+  return `
+    <p style="font-size:12px;color:var(--text3);margin-bottom:10px">
+      Current role: <span class="role-badge pic">pic</span>
+    </p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Edit assigned sports:</p>
+    <div class="sport-checkbox-grid">${sportCheckboxes}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      <button class="btn-primary" onclick="saveUserRole('${u.docId}','pic')">
+        <span>Save Changes</span>
+      </button>
+      <button class="btn-secondary" onclick="saveUserRole('${u.docId}','participant')">
+        Remove PIC Role
+      </button>
+    </div>`;
+}
+
+function toggleUserExpand(docId) {
+  const card = document.getElementById(`ucard-${docId}`);
+  const body = document.getElementById(`ubody-${docId}`);
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  card.classList.toggle('expanded', !open);
+  const btn = document.querySelector(`#ucard-${docId} .user-card-expand`);
+  if (btn) btn.textContent = open ? 'Manage' : 'Close';
+}
+
+function toggleSportCheckbox(label) {
+  label.classList.toggle('selected');
+  const cb = label.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+}
+
+async function saveUserRole(docId, newRole) {
+  const user = _adminAllUsers.find(u => u.docId === docId);
+  if (!user) return;
+
+  let picSports = [];
+  if (newRole === 'pic') {
+    const body = document.getElementById(`ubody-${docId}`);
+    picSports  = Array.from(body.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(cb => cb.value);
+    if (!picSports.length) {
+      showToast('Select at least one sport for PIC', true);
+      return;
+    }
+  }
+
+  showLoading(true);
+  try {
+    await updateDoc(doc(db, 'users', docId), { role: newRole, picSports });
+    showToast(newRole === 'pic'
+      ? `${user.name} is now PIC for: ${picSports.join(', ')}`
+      : `${user.name}'s role reset to participant`);
+    await loadAdminPanel();
+  } catch (err) {
+    console.error(err);
+    showToast('Could not update role. Try again.', true);
   } finally {
     showLoading(false);
   }
@@ -836,3 +1147,7 @@ window.openRegistrationForm = openRegistrationForm;
 window.closeDeleteModal     = closeDeleteModal;
 window.confirmDelete        = confirmDelete;
 window.resetProfile         = resetProfile;
+window.filterAdminUsers     = filterAdminUsers;
+window.toggleUserExpand     = toggleUserExpand;
+window.toggleSportCheckbox  = toggleSportCheckbox;
+window.saveUserRole         = saveUserRole;

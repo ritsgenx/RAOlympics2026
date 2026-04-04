@@ -276,28 +276,38 @@
     </div>
   </div>
 
-  <!-- TAB BAR -->
-  <nav id="tab-bar" style="display:none;">
-    <div class="tab-bar-inner">
-      <div class="tab-item" data-tab="home" onclick="switchTab('home')">
-        <span class="tab-icon">🏠</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Home</span>
-      </div>
-      <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
-        <span class="tab-icon">📊</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Dashboard</span>
-      </div>
-      <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
-        <div class="tab-icon-wrap">
-          <span class="tab-icon">📋</span>
-          <span class="tab-badge" id="tab-mylist-badge"></span>
-        </div>
-        <span class="tab-dot"></span>
-        <span class="tab-label">My List</span>
-      </div>
+  <!-- SCREEN: ADMIN PANEL -->
+  <div id="screen-admin" class="screen">
+    <div class="dash-header">
+      <div class="dash-title">👑 Admin Panel</div>
+      <div class="dash-sub">Manage users and roles</div>
     </div>
+    <div class="screen-inner">
+      <div class="dash-stats">
+        <div class="dash-stat-card">
+          <div class="dash-stat-val" id="admin-stat-users">—</div>
+          <div class="dash-stat-label">Total Users</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-val" id="admin-stat-pics">—</div>
+          <div class="dash-stat-label">Total PICs</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-val" id="admin-stat-regs">—</div>
+          <div class="dash-stat-label">Registrations</div>
+        </div>
+      </div>
+      <div class="admin-section-title gold">Manage Users</div>
+      <div class="form-group">
+        <input type="text" id="admin-search" placeholder="Search by name or phone…" autocomplete="off" oninput="filterAdminUsers()"/>
+      </div>
+      <div id="admin-user-list"></div>
+    </div>
+  </div>
+
+  <!-- TAB BAR — items injected by renderTabBar() after role is known -->
+  <nav id="tab-bar" style="display:none;">
+    <div class="tab-bar-inner"></div>
   </nav>
 
   <!-- DELETE CONFIRMATION MODAL -->
