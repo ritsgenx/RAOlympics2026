@@ -299,6 +299,28 @@
     </div>
   </nav>
 
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div id="delete-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-icon">🗑️</div>
+      <div class="modal-title">Delete Registration?</div>
+      <div class="modal-sport-name" id="modal-sport-name"></div>
+      <p class="modal-desc">This action cannot be undone. Please tell us why you want to remove this entry.</p>
+      <div class="form-group">
+        <label>Reason for deletion</label>
+        <textarea id="delete-reason" placeholder="e.g. Wrong sport selected, duplicate entry, change of plans…" rows="3"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary modal-delete-btn" onclick="confirmDelete()">
+          <span>Yes, Delete It</span>
+        </button>
+        <button class="btn-secondary" onclick="closeDeleteModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- LOADING OVERLAY -->
   <div id="loading" class="loading-overlay hidden">
     <div class="spinner"></div>

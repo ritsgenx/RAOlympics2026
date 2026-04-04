@@ -9,6 +9,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  deleteDoc,
+  doc,
   query,
   where,
   serverTimestamp
@@ -253,6 +255,8 @@ let currentSport       = null;
 let currentSubcategory = null;
 let userProfile        = null;
 let blockChart         = null;
+let deleteTargetId     = null;
+let deleteTargetName   = null;
 
 // ── Subcategory icon map ──
 const SUBCATEGORY_ICONS = {
@@ -478,7 +482,7 @@ async function loadRegistrations() {
   try {
     const q    = query(collection(db, 'registrations'), where('phone', '==', userProfile.phone));
     const snap = await getDocs(q);
-    const docs = snap.docs.map(d => d.data());
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     document.getElementById('stat-total').textContent  = docs.length;
     document.getElementById('stat-sports').textContent = new Set(docs.map(d => d.sport)).size;
@@ -491,11 +495,12 @@ async function loadRegistrations() {
     docs.forEach(d => {
       const card = document.createElement('div');
       card.className = 'reg-card';
-      const cls = d.regtype === 'Self' ? 'self' : d.regtype === 'Kid' ? 'kid' : '';
+      const cls        = d.regtype === 'Self' ? 'self' : d.regtype === 'Kid' ? 'kid' : '';
+      const sportLabel = d.subcategory ? `${d.sport} — ${d.subcategory}` : d.sport;
       card.innerHTML = `
         <div class="reg-card-icon">${d.sportEmoji || '🏆'}</div>
         <div class="reg-card-info">
-          <div class="reg-card-sport">${d.sport}</div>
+          <div class="reg-card-sport">${sportLabel}</div>
           <div class="reg-card-details">
             <span class="reg-tag">${d.name}</span>
             <span class="reg-tag">Age ${d.age}</span>
@@ -504,7 +509,11 @@ async function loadRegistrations() {
             <span class="reg-tag">Flat ${d.flat}</span>
           </div>
         </div>
+        <button class="reg-delete-btn" title="Delete registration">🗑️</button>
       `;
+      card.querySelector('.reg-delete-btn').addEventListener('click', () => {
+        openDeleteModal(d.id, sportLabel);
+      });
       list.appendChild(card);
     });
   } catch (err) {
@@ -731,6 +740,40 @@ function switchTab(tabName) {
   document.querySelector(`.tab-item[data-tab="${tabName}"]`).classList.add('active');
 }
 
+// ── Delete registration ──
+function openDeleteModal(id, sportName) {
+  deleteTargetId   = id;
+  deleteTargetName = sportName;
+  document.getElementById('modal-sport-name').textContent = sportName;
+  document.getElementById('delete-reason').value = '';
+  document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.add('hidden');
+  deleteTargetId   = null;
+  deleteTargetName = null;
+}
+
+async function confirmDelete() {
+  const reason = document.getElementById('delete-reason').value.trim();
+  if (!reason) return showToast('Please enter a reason for deletion', true);
+
+  showLoading(true);
+  try {
+    await deleteDoc(doc(db, 'registrations', deleteTargetId));
+    closeDeleteModal();
+    showToast(`"${deleteTargetName}" registration deleted successfully!`);
+    updateMyListBadge();
+    loadRegistrations();
+  } catch (err) {
+    console.error(err);
+    showToast('Could not delete. Please try again.', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
 // ── Helpers ──
 function showLoading(v) {
   document.getElementById('loading').classList.toggle('hidden', !v);
@@ -750,3 +793,5 @@ window.submitRegistration   = submitRegistration;
 window.showScreen           = showScreen;
 window.switchTab            = switchTab;
 window.openRegistrationForm = openRegistrationForm;
+window.closeDeleteModal     = closeDeleteModal;
+window.confirmDelete        = confirmDelete;
