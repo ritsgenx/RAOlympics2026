@@ -11,6 +11,22 @@
 </head>
 <body>
 
+  <!-- SCREEN: ADMIN PIN VERIFICATION -->
+  <div id="screen-admin-pin" class="screen">
+    <div class="screen-inner center-content">
+      <span class="pin-lock-icon">🔐</span>
+      <h2 class="card-title" style="margin-bottom:8px">Admin Verification</h2>
+      <p class="card-desc" style="margin-bottom:32px;max-width:260px">Enter your admin PIN to continue</p>
+      <input type="password" id="admin-pin-input" placeholder="••••••" maxlength="6" autocomplete="off"/>
+      <button class="btn-primary" style="max-width:200px;margin-top:20px" onclick="verifyAdminPin()">
+        <span>Verify</span>
+      </button>
+      <p onclick="skipAdminVerification()" style="margin-top:24px;font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline;text-underline-offset:3px">
+        Continue as Participant
+      </p>
+    </div>
+  </div>
+
   <!-- SCREEN 1: PROFILE SETUP -->
   <div id="screen-profile" class="screen active">
     <div class="screen-inner">
@@ -60,6 +76,11 @@
         <span class="greeting" id="greeting-name">Hi there!</span>
         <span class="topbar-sub">Choose a sport to register</span>
       </div>
+    </div>
+    <!-- Announcement banner — shown/hidden by loadAnnouncementBanner() -->
+    <div id="announcement-banner" class="announcement-banner" style="display:none">
+      <span class="announcement-icon">📢</span>
+      <span class="announcement-text" id="announcement-text-display"></span>
     </div>
     <div class="sports-grid" id="sports-grid"></div>
   </div>
@@ -113,6 +134,9 @@
       <button class="btn-primary details-register-btn" id="det-register-btn">
         <span id="det-register-label">Register →</span>
       </button>
+      <p id="det-closed-notice" class="reg-closed-notice" style="display:none">
+        Registration for this sport is currently closed by the organiser.
+      </p>
     </div>
   </div>
 
@@ -151,7 +175,7 @@
             <label class="radio-opt"><input type="radio" name="gender" value="Male"/> Male</label>
             <label class="radio-opt"><input type="radio" name="gender" value="Female"/> Female</label>
           </div>
-        </div>      
+        </div>
         <div class="partner-section" id="partner-section" style="display:none;">
           <p class="partner-section-title">Partner Details</p>
           <div class="form-group">
@@ -255,6 +279,7 @@
       <div class="dash-sub">Live data from all residents</div>
     </div>
     <div class="screen-inner">
+      <div id="dash-pic-greeting"></div>
       <div class="dash-stats">
         <div class="dash-stat-card">
           <div class="dash-stat-val" id="dash-total">—</div>
@@ -290,11 +315,96 @@
     </div>
   </div>
 
-  <!-- SCREEN: ADMIN PANEL -->
+  <!-- SCREEN: ADMIN CONTROL CENTRE (home) -->
   <div id="screen-admin" class="screen">
-    <div class="dash-header">
-      <div class="dash-title">👑 Admin Panel</div>
-      <div class="dash-sub">Manage users and roles</div>
+    <div class="dash-header" style="border-bottom:1px solid rgba(240,165,0,0.25)">
+      <div class="dash-title" style="color:var(--accent)">👑 Control Centre</div>
+      <div class="dash-sub">Admin access only</div>
+    </div>
+    <div class="admin-control-grid">
+      <div class="admin-control-tile" onclick="openAdminSection('manage-sports')">
+        <span class="admin-tile-icon">🏅</span>
+        <div class="admin-tile-title">Manage Sports</div>
+        <div class="admin-tile-sub">Enable or disable registrations</div>
+      </div>
+      <div class="admin-control-tile" onclick="openAdminSection('sport-details')">
+        <span class="admin-tile-icon">✏️</span>
+        <div class="admin-tile-title">Sport Details</div>
+        <div class="admin-tile-sub">Edit dates, venue, rules</div>
+      </div>
+      <div class="admin-control-tile" onclick="openAdminSection('announcements')">
+        <span class="admin-tile-icon">📢</span>
+        <div class="admin-tile-title">Announcements</div>
+        <div class="admin-tile-sub">Post message to home screen</div>
+      </div>
+      <div class="admin-control-tile" onclick="openAdminSection('export-data')">
+        <span class="admin-tile-icon">📥</span>
+        <div class="admin-tile-title">Export Data</div>
+        <div class="admin-tile-sub">Download registrations as CSV</div>
+      </div>
+      <div class="admin-control-tile" onclick="openAdminSection('all-registrations')">
+        <span class="admin-tile-icon">📋</span>
+        <div class="admin-tile-title">All Registrations</div>
+        <div class="admin-tile-sub">View all participant details</div>
+      </div>
+      <div class="admin-control-tile" onclick="openAdminSection('manage-users')">
+        <span class="admin-tile-icon">👥</span>
+        <div class="admin-tile-title">Manage Users</div>
+        <div class="admin-tile-sub">Assign and remove PIC roles</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: ADMIN > MANAGE SPORTS -->
+  <div id="screen-admin-manage-sports" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">Manage Sports</span></div>
+    </div>
+    <div class="screen-inner" id="admin-manage-sports-content"></div>
+  </div>
+
+  <!-- SCREEN: ADMIN > SPORT DETAILS -->
+  <div id="screen-admin-sport-details" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">Sport Details</span></div>
+    </div>
+    <div class="screen-inner" id="admin-sport-details-content"></div>
+  </div>
+
+  <!-- SCREEN: ADMIN > ANNOUNCEMENTS -->
+  <div id="screen-admin-announcements" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">Announcements</span></div>
+    </div>
+    <div class="screen-inner" id="admin-announcements-content"></div>
+  </div>
+
+  <!-- SCREEN: ADMIN > EXPORT DATA -->
+  <div id="screen-admin-export-data" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">Export Data</span></div>
+    </div>
+    <div class="screen-inner" id="admin-export-data-content"></div>
+  </div>
+
+  <!-- SCREEN: ADMIN > ALL REGISTRATIONS -->
+  <div id="screen-admin-all-registrations" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">All Registrations</span></div>
+    </div>
+    <div class="screen-inner" id="admin-all-registrations-content"></div>
+  </div>
+
+  <!-- SCREEN: ADMIN > MANAGE USERS -->
+  <div id="screen-admin-manage-users" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">Manage Users</span></div>
     </div>
     <div class="screen-inner">
       <div class="dash-stats">

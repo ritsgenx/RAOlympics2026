@@ -9,6 +9,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
+  setDoc,
   deleteDoc,
   doc,
   updateDoc,
@@ -258,8 +260,9 @@ const ADMIN_PHONE = "9945648475";
 // a trusted community app. For production apps requiring
 // strict security, implement Firebase Security Rules
 // and Firebase Authentication.
+let adminVerified = false;
 function isAdmin() {
-  return userProfile && userProfile.phone === ADMIN_PHONE;
+  return userProfile && userProfile.phone === ADMIN_PHONE && adminVerified === true;
 }
 
 // ── App state ──
@@ -306,6 +309,11 @@ async function loadProfile() {
         localStorage.setItem('sportsFestProfile', JSON.stringify(userProfile));
       }
     } catch (e) { /* use cached role on network error */ }
+    // Restore admin verification from previous session
+    if (userProfile.phone === ADMIN_PHONE &&
+        localStorage.getItem('adminVerified') === 'true') {
+      adminVerified = true;
+    }
     enterApp();
   } else {
     showScreen('screen-profile');
@@ -370,6 +378,50 @@ async function saveProfile() {
 function enterApp() {
   document.getElementById('greeting-name').textContent =
     `Hi, ${userProfile.name.split(' ')[0]}! 👋`;
+  // Admin phone without verified PIN → show PIN screen first
+  if (userProfile.phone === ADMIN_PHONE && !adminVerified) {
+    document.getElementById('tab-bar').style.display = 'none';
+    document.getElementById('admin-pin-input').value = '';
+    showScreen('screen-admin-pin');
+    return;
+  }
+  renderTabBar();
+  switchTab('home');
+}
+
+// ── Admin PIN verification ──
+async function verifyAdminPin() {
+  const entered = document.getElementById('admin-pin-input').value.trim();
+  if (!entered) return showToast('Please enter your PIN', true);
+
+  showLoading(true);
+  try {
+    const pinDoc = await getDoc(doc(db, 'config', 'adminPin'));
+    if (!pinDoc.exists()) {
+      showToast('PIN not configured. Contact support.', true);
+      return;
+    }
+    if (entered === String(pinDoc.data().pin)) {
+      adminVerified = true;
+      localStorage.setItem('adminVerified', 'true');
+      showToast('Welcome, Admin!');
+      renderTabBar();
+      switchTab('home');
+    } else {
+      showToast('Incorrect PIN', true);
+      document.getElementById('admin-pin-input').value = '';
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Could not verify PIN. Try again.', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function skipAdminVerification() {
+  adminVerified = false;
+  localStorage.removeItem('adminVerified');
   renderTabBar();
   switchTab('home');
 }
@@ -421,20 +473,40 @@ function buildSportsGrid() {
 }
 
 // ── Sport details ──
-function openSportDetails(sport) {
+async function openSportDetails(sport) {
   currentSport       = sport;
   currentSubcategory = null;
 
-  document.getElementById('det-emoji').textContent    = sport.emoji;
-  document.getElementById('det-name').textContent     = sport.name;
-  document.getElementById('det-datetime').textContent = sport.datetime;
-  document.getElementById('det-venue').textContent    = sport.venue;
-  document.getElementById('det-max').textContent      = sport.maxParticipants;
-  document.getElementById('det-age').textContent      = sport.ageGroup;
-  document.getElementById('det-contact').textContent  = sport.contact;
+  document.getElementById('det-emoji').textContent = sport.emoji;
+  document.getElementById('det-name').textContent  = sport.name;
+  document.getElementById('det-max').textContent   = sport.maxParticipants;
+  document.getElementById('det-age').textContent   = sport.ageGroup;
 
+  // Defaults from SPORTS array
+  let datetime         = sport.datetime;
+  let venue            = sport.venue;
+  let contact          = sport.contact;
+  let rules            = sport.rules;
+  let registrationOpen = true;
+
+  // Fetch Firestore overrides from sportSettings
+  try {
+    const settingDoc = await getDoc(doc(db, 'sportSettings', sport.name));
+    if (settingDoc.exists()) {
+      const d = settingDoc.data();
+      if (d.datetime)                    datetime = d.datetime;
+      if (d.venue)                       venue    = d.venue;
+      if (d.contact)                     contact  = d.contact;
+      if (d.rules && d.rules.length)     rules    = d.rules;
+      if (d.registrationOpen === false)  registrationOpen = false;
+    }
+  } catch (e) { /* use hardcoded values on network error */ }
+
+  document.getElementById('det-datetime').textContent = datetime;
+  document.getElementById('det-venue').textContent    = venue;
+  document.getElementById('det-contact').textContent  = contact;
   document.getElementById('det-rules').innerHTML =
-    sport.rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
+    rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
 
   // ── Subcategory pills ──
   const subSection = document.getElementById('subcategory-section');
@@ -461,14 +533,32 @@ function openSportDetails(sport) {
     subSection.style.display = 'none';
   }
 
-  document.getElementById('det-register-label').textContent = `Register for ${sport.name} →`;
-  document.getElementById('det-register-btn').onclick = () => {
-    if (sport.subcategories.length > 0 && !currentSubcategory) {
-      showToast('Please select a category first', true);
-      return;
-    }
-    openRegistrationForm(sport);
-  };
+  // ── Register button — respect registrationOpen flag ──
+  const btn    = document.getElementById('det-register-btn');
+  const label  = document.getElementById('det-register-label');
+  const notice = document.getElementById('det-closed-notice');
+
+  if (!registrationOpen) {
+    label.textContent     = 'Registration Closed';
+    btn.disabled          = true;
+    btn.style.opacity     = '0.5';
+    btn.style.cursor      = 'not-allowed';
+    btn.onclick           = null;
+    notice.style.display  = 'block';
+  } else {
+    label.textContent     = `Register for ${sport.name} →`;
+    btn.disabled          = false;
+    btn.style.opacity     = '';
+    btn.style.cursor      = '';
+    notice.style.display  = 'none';
+    btn.onclick = () => {
+      if (sport.subcategories.length > 0 && !currentSubcategory) {
+        showToast('Please select a category first', true);
+        return;
+      }
+      openRegistrationForm(sport);
+    };
+  }
 
   showScreen('screen-details');
 }
@@ -720,6 +810,28 @@ async function loadBlockGraph() {
 
 // ── Dashboard ──
 async function loadDashboard() {
+  // PIC / Admin personalised greeting
+  const greetEl   = document.getElementById('dash-pic-greeting');
+  const firstName = userProfile.name.split(' ')[0];
+  const picSports = userProfile.picSports || [];
+  const isPic     = (userProfile.role === 'pic' || isAdmin()) && picSports.length > 0;
+
+  if (isPic) {
+    greetEl.innerHTML = `
+      <div class="dash-pic-banner">
+        <div class="dash-pic-hello">Hi, ${firstName}! 👋</div>
+        <div class="dash-pic-label">You are coordinating</div>
+        <div class="dash-pic-sports">
+          ${picSports.map(s => {
+            const sport = SPORTS.find(x => x.name === s);
+            return `<span class="dash-pic-chip">${sport ? sport.emoji : '🏆'} ${s}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+  } else {
+    greetEl.innerHTML = '';
+  }
+
   const chartEl      = document.getElementById('dash-chart');
   const sportChartEl = document.getElementById('dash-sport-chart');
   chartEl.innerHTML      = '<p class="dash-loading">Loading...</p>';
@@ -925,7 +1037,7 @@ function showScreen(id) {
   if (id === 'screen-registrations') loadRegistrations();
   if (id === 'screen-dashboard')     loadDashboard();
   if (id === 'screen-graph')         loadBlockGraph();
-  if (id === 'screen-admin')         loadAdminPanel();
+  if (id === 'screen-sports')        loadAnnouncementBanner();
 }
 
 function switchTab(tabName) {
@@ -973,6 +1085,374 @@ async function confirmDelete() {
   } finally {
     showLoading(false);
   }
+}
+
+// ── Admin Control Centre navigation ──
+function openAdminSection(section) {
+  const screenMap = {
+    'manage-sports':     'screen-admin-manage-sports',
+    'sport-details':     'screen-admin-sport-details',
+    'announcements':     'screen-admin-announcements',
+    'export-data':       'screen-admin-export-data',
+    'all-registrations': 'screen-admin-all-registrations',
+    'manage-users':      'screen-admin-manage-users',
+  };
+  const screenId = screenMap[section];
+  if (!screenId) return;
+  showScreen(screenId); // tab bar hidden automatically (sub-screens not in TAB_SCREENS)
+  if (section === 'manage-sports')     loadManageSports();
+  if (section === 'sport-details')     loadSportDetailsEdit();
+  if (section === 'announcements')     loadAnnouncements();
+  if (section === 'export-data')       loadExportData();
+  if (section === 'all-registrations') loadAllRegistrations();
+  if (section === 'manage-users')      loadAdminPanel();
+}
+
+function closeAdminSection() {
+  showScreen('screen-admin');
+}
+
+// ── Manage Sports (enable / disable registrations) ──
+async function loadManageSports() {
+  const container = document.getElementById('admin-manage-sports-content');
+  container.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const snap     = await getDocs(collection(db, 'sportSettings'));
+    const settings = {};
+    snap.docs.forEach(d => { settings[d.id] = d.data(); });
+
+    container.innerHTML = SPORTS.map(sport => {
+      const isOpen = settings[sport.name]?.registrationOpen !== false;
+      return `
+        <div class="sport-setting-row">
+          <span style="font-size:22px">${sport.emoji}</span>
+          <div class="sport-setting-info">
+            <div class="sport-setting-name">${sport.name}</div>
+            <div class="sport-setting-status ${isOpen ? 'open' : 'closed'}" id="status-${sport.name}">
+              ${isOpen ? 'Open' : 'Closed'}
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" ${isOpen ? 'checked' : ''}
+              onchange="toggleSportRegistration('${sport.name}', this.checked, this)"/>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">Could not load sport settings.</div>';
+  }
+}
+
+async function toggleSportRegistration(sportName, newValue, checkbox) {
+  // Optimistic UI update
+  const statusEl = document.getElementById(`status-${sportName}`);
+  if (statusEl) {
+    statusEl.textContent = newValue ? 'Open' : 'Closed';
+    statusEl.className   = `sport-setting-status ${newValue ? 'open' : 'closed'}`;
+  }
+  try {
+    await setDoc(doc(db, 'sportSettings', sportName), { registrationOpen: newValue }, { merge: true });
+    showToast(`${sportName} registration ${newValue ? 'opened' : 'closed'}`);
+  } catch (err) {
+    console.error(err);
+    showToast('Could not update. Try again.', true);
+    if (checkbox) checkbox.checked = !newValue; // revert toggle
+  }
+}
+
+// ── Edit Sport Details ──
+async function loadSportDetailsEdit() {
+  const container = document.getElementById('admin-sport-details-content');
+  container.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const snap     = await getDocs(collection(db, 'sportSettings'));
+    const settings = {};
+    snap.docs.forEach(d => { settings[d.id] = d.data(); });
+
+    container.innerHTML = SPORTS.map(sport => {
+      const s        = settings[sport.name] || {};
+      const slug     = sport.name.toLowerCase().replace(/\s+/g, '-');
+      const datetime = s.datetime || sport.datetime;
+      const venue    = s.venue    || sport.venue;
+      const contact  = s.contact  || sport.contact;
+      const rules    = (s.rules   || sport.rules).join('\n');
+      return `
+        <div class="sport-edit-card">
+          <div class="sport-edit-header" onclick="toggleSportEditCard('${slug}')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:22px">${sport.emoji}</span>
+              <span style="font-size:14px;font-weight:600;color:var(--text)">${sport.name}</span>
+            </div>
+            <span style="color:var(--text3);font-size:20px;line-height:1">›</span>
+          </div>
+          <div class="sport-edit-body" id="edit-body-${slug}">
+            <div class="edit-field-label">Date &amp; Time</div>
+            <input class="edit-field-input" id="edit-datetime-${slug}" type="text" value="${datetime}"/>
+            <div class="edit-field-label">Venue</div>
+            <input class="edit-field-input" id="edit-venue-${slug}" type="text" value="${venue}"/>
+            <div class="edit-field-label">Contact Person</div>
+            <input class="edit-field-input" id="edit-contact-${slug}" type="text" value="${contact}"/>
+            <div class="edit-field-label">Rules (one per line)</div>
+            <textarea class="edit-field-input" id="edit-rules-${slug}">${rules}</textarea>
+            <p style="font-size:11px;color:var(--text3);margin-top:4px">Enter each rule on a new line</p>
+            <div class="edit-actions">
+              <button class="btn-save" onclick="saveSportDetails('${sport.name}')">Save Changes</button>
+              <button class="btn-cancel" onclick="toggleSportEditCard('${slug}')">Cancel</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">Could not load sport settings.</div>';
+  }
+}
+
+function toggleSportEditCard(slug) {
+  document.getElementById(`edit-body-${slug}`).classList.toggle('open');
+}
+
+async function saveSportDetails(sportName) {
+  const slug     = sportName.toLowerCase().replace(/\s+/g, '-');
+  const datetime = document.getElementById(`edit-datetime-${slug}`).value.trim();
+  const venue    = document.getElementById(`edit-venue-${slug}`).value.trim();
+  const contact  = document.getElementById(`edit-contact-${slug}`).value.trim();
+  const rules    = document.getElementById(`edit-rules-${slug}`).value
+    .split('\n').map(r => r.trim()).filter(r => r.length > 0);
+
+  showLoading(true);
+  try {
+    await setDoc(doc(db, 'sportSettings', sportName), { datetime, venue, contact, rules }, { merge: true });
+    showToast('Sport details updated');
+    toggleSportEditCard(slug);
+  } catch (err) {
+    console.error(err);
+    showToast('Could not save. Try again.', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── Announcements ──
+async function loadAnnouncements() {
+  const container = document.getElementById('admin-announcements-content');
+  container.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const annoDoc  = await getDoc(doc(db, 'config', 'announcement'));
+    const current  = annoDoc.exists() && annoDoc.data().active ? annoDoc.data().message : null;
+    container.innerHTML = `
+      <div class="admin-section-title gold">Current Announcement</div>
+      <div style="margin-bottom:20px">
+        ${current
+          ? `<div class="announcement-banner" style="margin:0 0 4px;display:flex">
+               <span class="announcement-icon">📢</span>
+               <span class="announcement-text">${current}</span>
+             </div>`
+          : '<p class="dash-loading">No active announcement</p>'}
+      </div>
+      <div class="admin-section-title gold">Post New Announcement</div>
+      <div class="form-group" style="margin-bottom:12px">
+        <textarea id="announcement-text" class="edit-field-input" rows="4"
+          placeholder="Type your announcement here…">${current || ''}</textarea>
+      </div>
+      <button class="btn-primary" onclick="postAnnouncement()" style="margin-bottom:10px">
+        <span>📢 Post Announcement</span>
+      </button>
+      <button class="btn-secondary" onclick="clearAnnouncement()">Clear Announcement</button>`;
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">Could not load announcements.</div>';
+  }
+}
+
+async function postAnnouncement() {
+  const msg = (document.getElementById('announcement-text').value || '').trim();
+  if (!msg) return showToast('Please enter a message', true);
+  showLoading(true);
+  try {
+    await setDoc(doc(db, 'config', 'announcement'), { message: msg, active: true, createdAt: serverTimestamp() });
+    showToast('Announcement posted!');
+    loadAnnouncements();
+  } catch (err) {
+    console.error(err);
+    showToast('Could not post. Try again.', true);
+  } finally { showLoading(false); }
+}
+
+async function clearAnnouncement() {
+  showLoading(true);
+  try {
+    await setDoc(doc(db, 'config', 'announcement'), { active: false }, { merge: true });
+    showToast('Announcement cleared');
+    loadAnnouncements();
+  } catch (err) {
+    console.error(err);
+    showToast('Could not clear. Try again.', true);
+  } finally { showLoading(false); }
+}
+
+async function loadAnnouncementBanner() {
+  const banner = document.getElementById('announcement-banner');
+  if (!banner) return;
+  try {
+    const annoDoc = await getDoc(doc(db, 'config', 'announcement'));
+    if (annoDoc.exists() && annoDoc.data().active && annoDoc.data().message) {
+      document.getElementById('announcement-text-display').textContent = annoDoc.data().message;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch (e) { banner.style.display = 'none'; }
+}
+
+// ── Export Data ──
+function loadExportData() {
+  const container  = document.getElementById('admin-export-data-content');
+  const sportOpts  = SPORTS.map(s => `<option value="${s.name}">${s.emoji} ${s.name}</option>`).join('');
+  container.innerHTML = `
+    <div class="admin-section-title gold">Export All Registrations</div>
+    <p class="card-desc" style="margin-bottom:16px">Download every registration as a single CSV file.</p>
+    <button class="btn-primary" onclick="exportCSV(null)" style="margin-bottom:28px">
+      <span>📥 Download All as CSV</span>
+    </button>
+    <div class="admin-section-title gold">Export by Sport</div>
+    <p class="card-desc" style="margin-bottom:12px">Download registrations for a specific sport.</p>
+    <div class="form-group">
+      <select id="export-sport-select" class="edit-field-input">${sportOpts}</select>
+    </div>
+    <button class="btn-primary" onclick="exportCSV(document.getElementById('export-sport-select').value)">
+      <span>📥 Download Sport CSV</span>
+    </button>`;
+}
+
+function escapeCsvVal(val) {
+  if (val == null) return '';
+  const s = String(val);
+  return (s.includes(',') || s.includes('"') || s.includes('\n'))
+    ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function formatTimestamp(ts) {
+  if (!ts) return '';
+  try {
+    const d   = ts.toDate ? ts.toDate() : new Date(ts.seconds * 1000);
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch { return ''; }
+}
+
+async function exportCSV(sportFilter) {
+  showLoading(true);
+  try {
+    const q    = sportFilter
+      ? query(collection(db, 'registrations'), where('sport', '==', sportFilter))
+      : collection(db, 'registrations');
+    const snap = await getDocs(q);
+
+    if (snap.empty) { showToast('No registrations found', true); return; }
+
+    const headers = ['Sport','Name','Age','Gender','Registrant Type','Phone','Flat',
+                     'Subcategory','Partner Name','Partner Phone','Partner Flat','Registered At'];
+    const rows = snap.docs.map(d => {
+      const r = d.data();
+      return [r.sport, r.name, r.age, r.gender, r.regtype, r.phone, r.flat,
+              r.subcategory || '', r.partnerName || '', r.partnerPhone || '',
+              r.partnerFlat || '', formatTimestamp(r.registeredAt)].map(escapeCsvVal);
+    });
+
+    const csv   = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob  = new Blob([csv], { type: 'text/csv' });
+    const url   = URL.createObjectURL(blob);
+    const today = new Date().toISOString().slice(0, 10);
+    const fname = sportFilter
+      ? `registrations-${sportFilter.toLowerCase().replace(/\s+/g, '-')}-${today}.csv`
+      : `registrations-all-${today}.csv`;
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Downloading ${snap.size} registration${snap.size !== 1 ? 's' : ''}…`);
+  } catch (err) {
+    console.error(err);
+    showToast('Export failed. Try again.', true);
+  } finally { showLoading(false); }
+}
+
+// ── All Registrations (admin view) ──
+let _allRegs = [];
+
+async function loadAllRegistrations() {
+  const container = document.getElementById('admin-all-registrations-content');
+  container.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'registrations'));
+    _allRegs   = snap.docs.map(d => d.data());
+    container.innerHTML = `
+      <div class="form-group">
+        <input type="text" id="all-regs-search" placeholder="Search by name, phone or flat…"
+          autocomplete="off" oninput="filterAllRegs()"/>
+      </div>
+      <p id="all-regs-count" class="dash-loading" style="margin-bottom:12px"></p>
+      <div id="all-regs-list"></div>`;
+    renderAllRegs(_allRegs);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">Could not load registrations.</div>';
+  }
+}
+
+function filterAllRegs() {
+  const q = (document.getElementById('all-regs-search').value || '').trim().toLowerCase();
+  renderAllRegs(q
+    ? _allRegs.filter(d =>
+        (d.name  || '').toLowerCase().includes(q) ||
+        (d.phone || '').includes(q) ||
+        (d.flat  || '').toLowerCase().includes(q))
+    : _allRegs);
+}
+
+function renderAllRegs(regs) {
+  const countEl = document.getElementById('all-regs-count');
+  const listEl  = document.getElementById('all-regs-list');
+  if (!countEl || !listEl) return;
+  const uniqueSports = new Set(regs.map(r => r.sport)).size;
+  countEl.textContent = `${regs.length} registration${regs.length !== 1 ? 's' : ''} across ${uniqueSports} sport${uniqueSports !== 1 ? 's' : ''}`;
+  if (!regs.length) {
+    listEl.innerHTML = '<div class="empty-state">No registrations found.</div>';
+    return;
+  }
+  const bySport = {};
+  regs.forEach(d => {
+    if (!bySport[d.sport]) bySport[d.sport] = [];
+    bySport[d.sport].push(d);
+  });
+  listEl.innerHTML = SPORTS
+    .filter(s => bySport[s.name])
+    .map(s => `
+      <div class="pic-sport-heading" style="margin-top:16px">
+        <span>${s.emoji}</span><span>${s.name}</span>
+        <span class="reg-detail-tag">${bySport[s.name].length}</span>
+      </div>
+      ${bySport[s.name].map(d => `
+        <div class="reg-detail-card">
+          <div class="reg-detail-name">${d.name || '—'}</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
+            Age ${d.age || '—'} · ${d.gender || '—'} · ${d.regtype || '—'}
+          </div>
+          <div class="reg-detail-tags">
+            <span class="reg-detail-tag phone">${d.phone || '—'}</span>
+            <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
+            ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
+          </div>
+          ${d.partnerName || d.partnerPhone ? `
+          <div style="font-size:11px;color:var(--text3);margin-top:6px">
+            Partner: ${d.partnerName || '—'} · ${d.partnerPhone || '—'} · ${d.partnerFlat || '—'}
+          </div>` : ''}
+        </div>`).join('')}`)
+    .join('');
 }
 
 // ── Admin panel ──
@@ -1181,6 +1661,7 @@ function resetProfile() {
   } else {
     clearTimeout(_resetTimer);
     _resetPending = false;
+    adminVerified = false;
     localStorage.clear();
     window.location.reload();
   }
@@ -1195,8 +1676,19 @@ window.openRegistrationForm = openRegistrationForm;
 window.closeDeleteModal     = closeDeleteModal;
 window.confirmDelete        = confirmDelete;
 window.resetProfile         = resetProfile;
+window.verifyAdminPin       = verifyAdminPin;
+window.skipAdminVerification = skipAdminVerification;
 window.openPicSportDetail   = openPicSportDetail;
 window.filterAdminUsers     = filterAdminUsers;
 window.toggleUserExpand     = toggleUserExpand;
 window.toggleSportCheckbox  = toggleSportCheckbox;
-window.saveUserRole         = saveUserRole;
+window.saveUserRole            = saveUserRole;
+window.openAdminSection        = openAdminSection;
+window.closeAdminSection       = closeAdminSection;
+window.toggleSportRegistration = toggleSportRegistration;
+window.toggleSportEditCard     = toggleSportEditCard;
+window.saveSportDetails        = saveSportDetails;
+window.postAnnouncement        = postAnnouncement;
+window.clearAnnouncement       = clearAnnouncement;
+window.exportCSV               = exportCSV;
+window.filterAllRegs           = filterAllRegs;
