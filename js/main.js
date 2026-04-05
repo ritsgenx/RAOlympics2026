@@ -1119,7 +1119,7 @@ async function loadDashboard() {
 // ── PIC participant detail section — sport selection buttons ──
 function renderPicSection(container, sports, allDocs) {
   const wrap = document.createElement('div');
-  wrap.innerHTML = '<div class="admin-section-title teal">🟢 I am PIC for Sports — Participant Details</div>';
+  wrap.innerHTML = '<div class="admin-section-title teal">🟢 List of Sports I am Coordinating</div>';
   sports.forEach(sportName => {
     const sportObj = SPORTS.find(s => s.name === sportName);
     const emoji    = sportObj ? sportObj.emoji : '🏆';
