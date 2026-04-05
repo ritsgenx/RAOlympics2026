@@ -235,7 +235,7 @@ const SPORTS = [
     ]
   },
   {
-    name: "Carrom", emoji: "🟫",
+    name: "Carrom", emoji: "🟫", image: "images/carrom.png",
     subcategories:   ["Singles", "Doubles"],
     datetime:        "TBD",
     venue:           "Club House — Indoor Hall",
@@ -303,7 +303,7 @@ const SPORTS = [
     ]
   },
   {
-    name: "Rubik's Cube", emoji: "🎲",
+    name: "Rubik's Cube", emoji: "🎲", image: "images/rubiks.png",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Club House — Conference Room",
@@ -566,7 +566,9 @@ function buildSportsGrid() {
     const tile = document.createElement('div');
     tile.className = 'sport-tile';
     tile.innerHTML = `
-      <span class="sport-emoji">${sport.emoji}</span>
+      ${sport.image
+        ? `<img src="${sport.image}" class="sport-emoji" style="width:36px;height:36px;object-fit:contain" alt="${sport.name}">`
+        : `<span class="sport-emoji">${sport.emoji}</span>`}
       <span class="sport-label">${sport.name}</span>
     `;
     tile.addEventListener('click', () => openSportDetails(sport));
@@ -579,7 +581,9 @@ async function openSportDetails(sport) {
   currentSport       = sport;
   currentSubcategory = null;
 
-  document.getElementById('det-emoji').textContent = sport.emoji;
+  document.getElementById('det-emoji').innerHTML = sport.image
+    ? `<img src="${sport.image}" style="width:56px;height:56px;object-fit:contain" alt="${sport.name}">`
+    : sport.emoji;
   document.getElementById('det-name').textContent  = sport.name;
   document.getElementById('det-max').textContent   = sport.maxParticipants;
 
