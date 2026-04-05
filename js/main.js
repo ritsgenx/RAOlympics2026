@@ -559,6 +559,56 @@ function renderTabBar() {
   updateMyListBadge();
 }
 
+// ── PIC Section renderer ──
+function renderPICSection(picUsers) {
+  const container = document.getElementById('details-pic-list');
+  const heading   = document.getElementById('details-pic-heading');
+  if (!container) return;
+
+  if (picUsers.length === 0) {
+    if (heading) heading.textContent = 'Person in Charge';
+    container.innerHTML = `
+      <div class="pic-empty-card">
+        <div class="pic-empty-icon">👤</div>
+        <div class="pic-empty-text">No coordinator assigned yet</div>
+        <div class="pic-empty-sub">Contact the organiser for queries</div>
+      </div>`;
+    return;
+  }
+
+  if (heading) heading.textContent = picUsers.length === 1 ? 'Person in Charge' : 'People in Charge';
+
+  const avatarGradients = [
+    'linear-gradient(135deg, #f0a500, #ff6b35)',
+    'linear-gradient(135deg, #534AB7, #89b4fa)',
+    'linear-gradient(135deg, #1D9E75, #5DCAA5)',
+  ];
+
+  const waSVG = `<svg width="12" height="12" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0;"><circle cx="16" cy="16" r="16" fill="#25D366"/><path fill="#fff" d="M23 20.5c-.3.8-1.5 1.5-2.4 1.7-.6.1-1.5.2-4.3-.9-3.6-1.5-5.9-5.1-6.1-5.4-.2-.2-1.4-1.9-1.4-3.6 0-1.7.9-2.6 1.2-2.9.3-.4.7-.4.9-.4h.7c.2 0 .5-.1.8.6.3.7 1 2.4 1.1 2.6.1.2.1.4 0 .6-.1.2-.2.4-.4.6-.2.2-.4.5-.5.6-.2.2-.4.4-.1.7.2.4.9 1.5 2 2.4 1.3 1.2 2.5 1.6 2.8 1.7.3.2.6.1.8-.1.2-.2.9-1 1.1-1.4.2-.3.5-.3.8-.2.3.1 2.1 1 2.4 1.1.3.2.6.3.7.4.1.2.1.9-.2 1.7z"/></svg>`;
+
+  container.innerHTML = '';
+  picUsers.forEach((pic, index) => {
+    const initial  = pic.name ? pic.name.charAt(0).toUpperCase() : '?';
+    const gradient = avatarGradients[index % avatarGradients.length];
+    const waNumber = pic.phone.toString().replace(/\D/g, '');
+    const waUrl    = 'https://wa.me/91' + waNumber;
+
+    const card = document.createElement('div');
+    card.className = 'pic-avatar-card';
+    card.innerHTML = `
+      <div class="pic-avatar-circle" style="background:${gradient}">${initial}</div>
+      <div class="pic-avatar-info">
+        <div class="pic-avatar-top">
+          <div class="pic-avatar-name">${pic.name}</div>
+          <div class="pic-role-badge">PIC</div>
+        </div>
+        <div class="pic-avatar-flat">${pic.flat ? `Flat ${pic.flat}` : ''}</div>
+        <a href="${waUrl}" target="_blank" class="pic-wa-button">${waSVG}<span>WhatsApp</span></a>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
 // ── WhatsApp link helper ──
 function makeWhatsAppLink(phone, displayText, extraClass) {
   const cleaned = phone.toString().replace(/\D/g, '');
@@ -622,30 +672,18 @@ async function openSportDetails(sport) {
   document.getElementById('det-rules').innerHTML =
     rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
 
-  // ── Person in Charge names from assigned PIC users ──
-  const picList = document.getElementById('det-pic-list');
-  picList.innerHTML = '';
+  // ── Person in Charge — dynamic from Firestore ──
+  const picContainer = document.getElementById('details-pic-list');
+  if (picContainer) picContainer.innerHTML = '<div class="pic-loading">Loading coordinators…</div>';
   try {
     const picSnap = await getDocs(query(
       collection(db, 'users'),
       where('picSports', 'array-contains', sport.name)
     ));
-    if (!picSnap.empty) {
-      picList.innerHTML = picSnap.docs.map(d => {
-        const u = d.data();
-        return `<div class="det-pic-chip">
-          <span class="det-pic-avatar">${u.name.charAt(0).toUpperCase()}</span>
-          <div class="det-pic-info">
-            <span class="det-pic-name">${u.name}</span>
-            <span class="det-pic-meta">Flat ${u.flat} · ${makeWhatsAppLink(u.phone)}</span>
-          </div>
-        </div>`;
-      }).join('');
-    } else {
-      picList.innerHTML = `<span class="det-pic-tbd">To be announced</span>`;
-    }
+    const picUsers = picSnap.docs.map(d => d.data());
+    renderPICSection(picUsers);
   } catch (e) {
-    picList.innerHTML = `<span class="det-pic-tbd">To be announced</span>`;
+    if (picContainer) picContainer.innerHTML = `<div class="pic-empty-card"><div class="pic-empty-text">Could not load coordinator info</div></div>`;
   }
 
   // ── Subcategory pills ──

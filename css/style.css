@@ -1733,59 +1733,120 @@ textarea.edit-field-input {
 }
 
 /* ── SPORT DETAILS — PERSON IN CHARGE SECTION ── */
-.det-pic-section {
-  margin-bottom: 18px;
+.details-pic-section {
+  margin-bottom: 16px;
 }
-.det-pic-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin-bottom: 10px;
-}
-.det-pic-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.det-pic-chip {
+.details-pic-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-}
-.det-pic-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
-  font-size: 15px;
+  gap: 8px;
+  font-size: 11px;
   font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+}
+.details-pic-icon { font-size: 14px; }
+
+.pic-avatar-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.pic-avatar-card:last-child { margin-bottom: 0; }
+.pic-avatar-card:hover { border-color: var(--border2); }
+
+.pic-avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
   flex-shrink: 0;
+  position: relative;
 }
-.det-pic-info {
+.pic-avatar-circle::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+}
+
+.pic-avatar-info { flex: 1; min-width: 0; }
+.pic-avatar-top {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
 }
-.det-pic-name {
+.pic-avatar-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
 }
-.det-pic-meta {
+.pic-role-badge {
+  background: rgba(240,165,0,0.12);
+  border: 1px solid rgba(240,165,0,0.3);
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-size: 9px;
+  color: #f0a500;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.pic-avatar-flat {
   font-size: 11px;
   color: var(--text3);
+  margin-bottom: 8px;
 }
+.pic-wa-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(37,211,102,0.12);
+  border: 1px solid rgba(37,211,102,0.25);
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: #25D366;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pic-wa-button:hover {
+  background: rgba(37,211,102,0.2);
+  border-color: rgba(37,211,102,0.4);
+}
+.pic-empty-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  text-align: center;
+}
+.pic-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+.pic-empty-text { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.pic-empty-sub  { font-size: 11px; color: var(--text3); font-style: italic; }
+.pic-loading {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  padding: 16px;
+  font-style: italic;
+}
+
 /* ── WHATSAPP LINKS ── */
 .wa-link {
   display: inline-flex;
@@ -1807,8 +1868,3 @@ textarea.edit-field-input {
 }
 .wa-link.small .wa-icon { font-size: 12px; }
 
-.det-pic-tbd {
-  font-size: 13px;
-  color: var(--text3);
-  font-style: italic;
-}
