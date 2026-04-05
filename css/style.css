@@ -1786,6 +1786,27 @@ textarea.edit-field-input {
   font-size: 11px;
   color: var(--text3);
 }
+/* ── WHATSAPP LINKS ── */
+.wa-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #25D366;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+.wa-link:hover { opacity: 0.8; }
+.wa-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.wa-link.small {
+  font-size: 12px;
+  gap: 4px;
+}
+.wa-link.small .wa-icon { font-size: 12px; }
+
 .det-pic-tbd {
   font-size: 13px;
   color: var(--text3);

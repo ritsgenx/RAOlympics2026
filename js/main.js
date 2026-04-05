@@ -559,6 +559,14 @@ function renderTabBar() {
   updateMyListBadge();
 }
 
+// ── WhatsApp link helper ──
+function makeWhatsAppLink(phone, displayText, extraClass) {
+  const cleaned = phone.toString().replace(/\D/g, '');
+  const url     = 'https://wa.me/91' + cleaned;
+  const cls     = extraClass ? `wa-link ${extraClass}` : 'wa-link';
+  return `<a href="${url}" target="_blank" class="${cls}"><span class="wa-icon">💬</span>${displayText || phone}</a>`;
+}
+
 // ── Sports grid ──
 function buildSportsGrid() {
   const grid = document.getElementById('sports-grid');
@@ -629,7 +637,7 @@ async function openSportDetails(sport) {
           <span class="det-pic-avatar">${u.name.charAt(0).toUpperCase()}</span>
           <div class="det-pic-info">
             <span class="det-pic-name">${u.name}</span>
-            <span class="det-pic-meta">Flat ${u.flat} · 📞 ${u.phone}</span>
+            <span class="det-pic-meta">Flat ${u.flat} · ${makeWhatsAppLink(u.phone)}</span>
           </div>
         </div>`;
       }).join('');
@@ -703,7 +711,7 @@ function openRegistrationForm(sport) {
   document.getElementById('form-sport-icon').textContent    = sport.emoji;
   document.getElementById('form-sport-name').textContent    = sport.name;
   document.getElementById('form-title-sport').textContent   = sport.name + titleSuffix;
-  document.getElementById('form-phone-display').textContent = userProfile.phone;
+  document.getElementById('form-phone-display').innerHTML = makeWhatsAppLink(userProfile.phone);
   document.getElementById('form-flat-display').textContent  = `Flat ${userProfile.flat}`;
 
   document.getElementById('f-name').value         = '';
@@ -1114,7 +1122,7 @@ async function openPicSportDetail(sportName) {
           <span class="reg-detail-tag">Age ${d.age || '—'}</span>
           <span class="reg-detail-tag">${d.gender || '—'}</span>
           <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
-          <span class="reg-detail-tag phone">${d.phone || '—'}</span>
+          <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
           ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
           ${d.regtype    ? `<span class="reg-detail-tag">${d.regtype}</span>`    : ''}
         </div>
@@ -1579,13 +1587,13 @@ function renderAllRegs(regs) {
             Age ${d.age || '—'} · ${d.gender || '—'} · ${d.regtype || '—'}
           </div>
           <div class="reg-detail-tags">
-            <span class="reg-detail-tag phone">${d.phone || '—'}</span>
+            <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
             <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
             ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
           </div>
           ${d.partnerName || d.partnerPhone ? `
           <div style="font-size:11px;color:var(--text3);margin-top:6px">
-            Partner: ${d.partnerName || '—'} · ${d.partnerPhone || '—'} · ${d.partnerFlat || '—'}
+            Partner: ${d.partnerName || '—'} · ${d.partnerPhone ? makeWhatsAppLink(d.partnerPhone, d.partnerPhone, 'small') : '—'} · ${d.partnerFlat || '—'}
           </div>` : ''}
         </div>`).join('')}`)
     .join('');
@@ -1649,7 +1657,7 @@ function renderAdminUserList(users) {
         <div class="user-card-header">
           <div>
             <div class="user-card-name">${u.name || '—'}</div>
-            <div class="user-card-sub">${u.phone || '—'} · Flat ${u.flat || '—'}</div>
+            <div class="user-card-sub">${u.phone ? makeWhatsAppLink(u.phone, u.phone, 'small') : '—'} · Flat ${u.flat || '—'}</div>
             ${picTags}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
