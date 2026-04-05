@@ -1731,3 +1731,57 @@ textarea.edit-field-input {
   margin-top: 10px;
   text-align: center;
 }
+
+/* ── SPORT DETAILS — PERSON IN CHARGE SECTION ── */
+.det-pic-section {
+  margin-bottom: 18px;
+}
+.det-pic-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+.det-pic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.det-pic-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.det-pic-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.det-pic-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+.det-pic-flat {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  background: var(--bg3);
+  border-radius: 4px;
+  padding: 2px 7px;
+}

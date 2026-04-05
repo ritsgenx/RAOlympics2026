@@ -510,6 +510,29 @@ async function openSportDetails(sport) {
   document.getElementById('det-rules').innerHTML =
     rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
 
+  // ── Person in Charge names from assigned PIC users ──
+  const picSection = document.getElementById('det-pic-section');
+  const picList    = document.getElementById('det-pic-list');
+  picSection.style.display = 'none';
+  picList.innerHTML = '';
+  try {
+    const picSnap = await getDocs(query(
+      collection(db, 'users'),
+      where('picSports', 'array-contains', sport.name)
+    ));
+    if (!picSnap.empty) {
+      picList.innerHTML = picSnap.docs.map(d => {
+        const u = d.data();
+        return `<div class="det-pic-chip">
+          <span class="det-pic-avatar">${u.name.charAt(0).toUpperCase()}</span>
+          <span class="det-pic-name">${u.name}</span>
+          <span class="det-pic-flat">Flat ${u.flat}</span>
+        </div>`;
+      }).join('');
+      picSection.style.display = 'block';
+    }
+  } catch (e) { /* silently skip if offline */ }
+
   // ── Subcategory pills ──
   const subSection = document.getElementById('subcategory-section');
   const pillsEl    = document.getElementById('subcategory-pills');
