@@ -390,6 +390,14 @@ const BLOCK_COLORS = ['#0080ff', '#ff6a00', '#00e5a0', '#c84bff', '#f1c40f'];
 document.addEventListener('DOMContentLoaded', () => {
   buildSportsGrid();
   loadProfile();
+
+  // Strip non-digits from flat number inputs as the user types
+  ['p-flat', 'f-partner-flat'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => {
+      el.value = el.value.replace(/\D/g, '').slice(0, 4);
+    });
+  });
 });
 
 // ── Profile ──
@@ -429,10 +437,11 @@ async function saveProfile() {
   const flatNo = document.getElementById('p-flat').value.trim();
   const flat  = block && flatNo ? `${block}-${flatNo}` : '';
 
-  if (!name)               return showToast('Please enter your name', true);
-  if (phone.length < 10)   return showToast('Please enter a valid 10-digit phone number', true);
-  if (!block)              return showToast('Please select your block', true);
-  if (!flatNo)             return showToast('Please enter your flat number', true);
+  if (!name)                        return showToast('Please enter your name', true);
+  if (phone.length < 10)            return showToast('Please enter a valid 10-digit phone number', true);
+  if (!block)                       return showToast('Please select your block', true);
+  if (!flatNo)                      return showToast('Please enter your flat number', true);
+  if (!/^\d{1,4}$/.test(flatNo))    return showToast('Flat number must be digits only (max 4)', true);
 
   showLoading(true);
   try {
@@ -784,9 +793,10 @@ async function submitRegistration() {
     partnerName  = document.getElementById('f-partner-name').value.trim();
     partnerPhone = document.getElementById('f-partner-phone').value.trim();
     partnerFlat  = document.getElementById('f-partner-flat').value.trim();
-    if (!partnerName)            return showToast('Please enter partner name', true);
-    if (partnerPhone.length < 10) return showToast("Please enter partner's 10-digit phone", true);
-    if (!partnerFlat)            return showToast('Please enter partner block & flat', true);
+    if (!partnerName)                      return showToast('Please enter partner name', true);
+    if (partnerPhone.length < 10)          return showToast("Please enter partner's 10-digit phone", true);
+    if (!partnerFlat)                      return showToast('Please enter partner flat number', true);
+    if (!/^\d{1,4}$/.test(partnerFlat))    return showToast('Partner flat must be digits only (max 4)', true);
   }
 
   showLoading(true);
