@@ -1880,3 +1880,23 @@ textarea.edit-field-input {
 }
 .wa-link.small .wa-icon { font-size: 12px; }
 
+/* ── APP FOOTER ── */
+.app-footer {
+  position: fixed;
+  bottom: 10px;
+  right: 14px;
+  font-size: 10px;
+  color: var(--text3);
+  text-align: right;
+  pointer-events: none;
+  z-index: 50;
+  line-height: 1.4;
+}
+.footer-wa-link {
+  color: #25D366;
+  text-decoration: none;
+  font-weight: 600;
+  pointer-events: all;
+}
+.footer-wa-link:hover { text-decoration: underline; }
+
