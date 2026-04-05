@@ -480,12 +480,12 @@ async function openSportDetails(sport) {
   document.getElementById('det-emoji').textContent = sport.emoji;
   document.getElementById('det-name').textContent  = sport.name;
   document.getElementById('det-max').textContent   = sport.maxParticipants;
-  document.getElementById('det-age').textContent   = sport.ageGroup;
 
   // Defaults from SPORTS array
   let datetime         = sport.datetime;
   let venue            = sport.venue;
   let contact          = sport.contact;
+  let ageGroup         = sport.ageGroup;
   let rules            = sport.rules;
   let registrationOpen = true;
 
@@ -497,6 +497,7 @@ async function openSportDetails(sport) {
       if (d.datetime)                    datetime = d.datetime;
       if (d.venue)                       venue    = d.venue;
       if (d.contact)                     contact  = d.contact;
+      if (d.ageGroup)                    ageGroup = d.ageGroup;
       if (d.rules && d.rules.length)     rules    = d.rules;
       if (d.registrationOpen === false)  registrationOpen = false;
     }
@@ -505,6 +506,7 @@ async function openSportDetails(sport) {
   document.getElementById('det-datetime').textContent = datetime;
   document.getElementById('det-venue').textContent    = venue;
   document.getElementById('det-contact').textContent  = contact;
+  document.getElementById('det-age').textContent      = ageGroup;
   document.getElementById('det-rules').innerHTML =
     rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
 
@@ -1174,10 +1176,11 @@ async function loadSportDetailsEdit() {
     container.innerHTML = SPORTS.map(sport => {
       const s        = settings[sport.name] || {};
       const slug     = sport.name.toLowerCase().replace(/\s+/g, '-');
-      const datetime = s.datetime || sport.datetime;
-      const venue    = s.venue    || sport.venue;
-      const contact  = s.contact  || sport.contact;
-      const rules    = (s.rules   || sport.rules).join('\n');
+      const datetime = s.datetime  || sport.datetime;
+      const venue    = s.venue     || sport.venue;
+      const contact  = s.contact   || sport.contact;
+      const ageGroup = s.ageGroup  || sport.ageGroup;
+      const rules    = (s.rules    || sport.rules).join('\n');
       return `
         <div class="sport-edit-card">
           <div class="sport-edit-header" onclick="toggleSportEditCard('${slug}')">
@@ -1194,6 +1197,8 @@ async function loadSportDetailsEdit() {
             <input class="edit-field-input" id="edit-venue-${slug}" type="text" value="${venue}"/>
             <div class="edit-field-label">Contact Person</div>
             <input class="edit-field-input" id="edit-contact-${slug}" type="text" value="${contact}"/>
+            <div class="edit-field-label">Age Group</div>
+            <input class="edit-field-input" id="edit-agegroup-${slug}" type="text" value="${ageGroup}"/>
             <div class="edit-field-label">Rules (one per line)</div>
             <textarea class="edit-field-input" id="edit-rules-${slug}">${rules}</textarea>
             <p style="font-size:11px;color:var(--text3);margin-top:4px">Enter each rule on a new line</p>
@@ -1219,12 +1224,13 @@ async function saveSportDetails(sportName) {
   const datetime = document.getElementById(`edit-datetime-${slug}`).value.trim();
   const venue    = document.getElementById(`edit-venue-${slug}`).value.trim();
   const contact  = document.getElementById(`edit-contact-${slug}`).value.trim();
+  const ageGroup = document.getElementById(`edit-agegroup-${slug}`).value.trim();
   const rules    = document.getElementById(`edit-rules-${slug}`).value
     .split('\n').map(r => r.trim()).filter(r => r.length > 0);
 
   showLoading(true);
   try {
-    await setDoc(doc(db, 'sportSettings', sportName), { datetime, venue, contact, rules }, { merge: true });
+    await setDoc(doc(db, 'sportSettings', sportName), { datetime, venue, contact, ageGroup, rules }, { merge: true });
     showToast('Sport details updated');
     toggleSportEditCard(slug);
   } catch (err) {
