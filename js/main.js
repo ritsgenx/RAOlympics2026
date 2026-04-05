@@ -320,7 +320,7 @@ const SPORTS = [
     ]
   },
   {
-    name: "Sudoku", emoji: "🔢",
+    name: "Sudoku", emoji: "🔢", image: "images/sudoku.png",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Club House — Conference Room",
@@ -585,7 +585,6 @@ async function openSportDetails(sport) {
     ? `<img src="${sport.image}" style="width:56px;height:56px;object-fit:contain" alt="${sport.name}">`
     : sport.emoji;
   document.getElementById('det-name').textContent  = sport.name;
-  document.getElementById('det-max').textContent   = sport.maxParticipants;
 
   // Defaults from SPORTS array
   let datetime         = sport.datetime;
