@@ -1421,15 +1421,15 @@ html, body {
 /* ── ADMIN CONTROL CENTRE ── */
 .admin-control-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
   padding: 4px 0 24px;
 }
 .admin-control-tile {
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
-  padding: 22px 16px 18px;
+  padding: 16px 10px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1447,7 +1447,7 @@ html, body {
   border-color: var(--accent);
 }
 .admin-tile-icon {
-  font-size: 32px;
+  font-size: 22px;
   line-height: 1;
 }
 .admin-tile-title {
@@ -1771,17 +1771,23 @@ textarea.edit-field-input {
   justify-content: center;
   flex-shrink: 0;
 }
+.det-pic-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
 .det-pic-name {
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
-  flex: 1;
 }
-.det-pic-flat {
+.det-pic-meta {
   font-size: 11px;
-  font-weight: 600;
   color: var(--text3);
-  background: var(--bg3);
-  border-radius: 4px;
-  padding: 2px 7px;
+}
+.det-pic-tbd {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
 }

@@ -201,7 +201,7 @@ const SPORTS = [
     ]
   },
   {
-    name: "Kids Event", emoji: "🎈",
+    name: "Kids Event (Under 5 years)", emoji: "🎈",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Garden / Ground",
@@ -235,20 +235,122 @@ const SPORTS = [
     ]
   },
   {
-    name: "Yoga", emoji: "🧘",
-    subcategories:   [],
+    name: "Carrom", emoji: "🟫",
+    subcategories:   ["Singles", "Doubles"],
     datetime:        "TBD",
-    venue:           "Terrace Garden / Open Lawn",
-    maxParticipants: "40 participants",
-    ageGroup:        "8 years & above",
+    venue:           "Club House — Indoor Hall",
+    maxParticipants: "32 players",
+    ageGroup:        "Open for all ages",
     contact:         "TBD",
     rules: [
-      "Group session led by a certified instructor",
-      "Duration: 60 minutes",
-      "Bring your own yoga mat",
-      "Wear comfortable, stretchable clothing",
-      "Avoid heavy meals at least 2 hours before",
-      "Modifications available for beginners and seniors"
+      "Singles and Doubles categories (knockout format)",
+      "Standard Carrom Federation rules apply",
+      "Board and coins provided by organizers",
+      "Strike must be flicked with a finger — no pushing",
+      "Queen must be covered immediately after pocketing",
+      "Players must report 10 min before their match"
+    ]
+  },
+  {
+    name: "Squash", emoji: "🟡",
+    subcategories:   ["Singles"],
+    datetime:        "TBD",
+    venue:           "Squash Court — Club House",
+    maxParticipants: "16 players",
+    ageGroup:        "16 years & above",
+    contact:         "TBD",
+    rules: [
+      "Singles knockout format",
+      "Best of 3 games to 11 points (PAR scoring)",
+      "Racket and balls provided by organizers",
+      "Non-marking shoes mandatory on court",
+      "Players must warm up before the match",
+      "Safety glasses strongly recommended"
+    ]
+  },
+  {
+    name: "Billiards / Pool", emoji: "🎱",
+    subcategories:   ["8-Ball Pool", "Billiards"],
+    datetime:        "TBD",
+    venue:           "Club House — Billiards Room",
+    maxParticipants: "16 players",
+    ageGroup:        "16 years & above",
+    contact:         "TBD",
+    rules: [
+      "8-Ball Pool and Billiards — separate categories",
+      "Single elimination knockout format",
+      "Cues, balls and table provided by organizers",
+      "Standard World Pool rules apply",
+      "No rough handling of equipment",
+      "Players must report 10 min before scheduled match"
+    ]
+  },
+  {
+    name: "Mr/Ms/Mrs Avriti (Fitness)", emoji: "🏋️‍♀️",
+    subcategories:   ["Mr Avriti", "Ms Avriti", "Mrs Avriti"],
+    datetime:        "TBD",
+    venue:           "Club House Stage / Amphitheatre",
+    maxParticipants: "30 participants",
+    ageGroup:        "18 years & above",
+    contact:         "TBD",
+    rules: [
+      "Fitness & personality contest — three categories",
+      "Round 1: Introduction & fitness showcase (2 min)",
+      "Round 2: Question & Answer round",
+      "Round 3: Talent / freestyle fitness display",
+      "Judged on fitness, confidence and personality",
+      "Appropriate sportswear must be worn throughout"
+    ]
+  },
+  {
+    name: "Rubik's Cube", emoji: "🎲",
+    subcategories:   [],
+    datetime:        "TBD",
+    venue:           "Club House — Conference Room",
+    maxParticipants: "30 participants",
+    ageGroup:        "Open for all ages",
+    contact:         "TBD",
+    rules: [
+      "Standard 3×3 speedsolve — fastest time wins",
+      "3 timed attempts; best time counts",
+      "Participants may bring their own cube",
+      "Inspection time: 15 seconds before each solve",
+      "WCA (World Cube Association) rules apply",
+      "Separate Junior (under 15) and Open categories"
+    ]
+  },
+  {
+    name: "Sudoku", emoji: "🔢",
+    subcategories:   [],
+    datetime:        "TBD",
+    venue:           "Club House — Conference Room",
+    maxParticipants: "40 participants",
+    ageGroup:        "Open for all ages",
+    contact:         "TBD",
+    rules: [
+      "Written round — printed puzzle sheets provided",
+      "Two puzzles: Medium and Hard difficulty",
+      "Winner decided by most correct + fastest time",
+      "No electronic devices allowed during the round",
+      "Duration: 30 minutes per round",
+      "Separate Junior (under 15) and Open categories"
+    ]
+  },
+  {
+    name: "Online Video Games", emoji: "🎮",
+    subcategories:   ["BGMI / PUBG", "Free Fire", "FIFA / eFootball", "Other"],
+    datetime:        "TBD",
+    venue:           "Online — from your own device",
+    maxParticipants: "40 players",
+    ageGroup:        "12 years & above",
+    contact:         "TBD",
+    rules: [
+      "Choose your game category at registration",
+      "Matches coordinated via WhatsApp group",
+      "Players must use their own device and internet",
+      "Fair play — no hacks, mods or emulators",
+      "Game ID / username required at registration",
+      "Schedule shared 24 hours before match"
     ]
   },
 ];
@@ -505,15 +607,12 @@ async function openSportDetails(sport) {
 
   document.getElementById('det-datetime').textContent = datetime;
   document.getElementById('det-venue').textContent    = venue;
-  document.getElementById('det-contact').textContent  = contact;
   document.getElementById('det-age').textContent      = ageGroup;
   document.getElementById('det-rules').innerHTML =
     rules.map(r => `<li class="details-rule-item">${r}</li>`).join('');
 
   // ── Person in Charge names from assigned PIC users ──
-  const picSection = document.getElementById('det-pic-section');
-  const picList    = document.getElementById('det-pic-list');
-  picSection.style.display = 'none';
+  const picList = document.getElementById('det-pic-list');
   picList.innerHTML = '';
   try {
     const picSnap = await getDocs(query(
@@ -525,13 +624,18 @@ async function openSportDetails(sport) {
         const u = d.data();
         return `<div class="det-pic-chip">
           <span class="det-pic-avatar">${u.name.charAt(0).toUpperCase()}</span>
-          <span class="det-pic-name">${u.name}</span>
-          <span class="det-pic-flat">Flat ${u.flat}</span>
+          <div class="det-pic-info">
+            <span class="det-pic-name">${u.name}</span>
+            <span class="det-pic-meta">Flat ${u.flat} · 📞 ${u.phone}</span>
+          </div>
         </div>`;
       }).join('');
-      picSection.style.display = 'block';
+    } else {
+      picList.innerHTML = `<span class="det-pic-tbd">To be announced</span>`;
     }
-  } catch (e) { /* silently skip if offline */ }
+  } catch (e) {
+    picList.innerHTML = `<span class="det-pic-tbd">To be announced</span>`;
+  }
 
   // ── Subcategory pills ──
   const subSection = document.getElementById('subcategory-section');
