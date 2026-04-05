@@ -48,7 +48,7 @@ const db  = getFirestore(app);
 // ============================================================
 const SPORTS = [
   {
-    name: "Cricket", emoji: "🏏",
+    name: "Box Cricket", emoji: "🏏",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Main Ground",
@@ -116,7 +116,7 @@ const SPORTS = [
     ]
   },
   {
-    name: "Swimming", emoji: "🏊",
+    name: "Water Sports", emoji: "🏊",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Swimming Pool",
