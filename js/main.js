@@ -355,6 +355,251 @@ const SPORTS = [
   },
 ];
 
+// ============================================================
+//  QUIZ QUESTIONS — 200 daily sports questions
+//  Categories: Cricket(25), Football(20), Badminton(15),
+//  Olympics(20), Swimming(15), Tennis(15), Basketball(15),
+//  Athletics(15), Chess(10), TableTennis(10),
+//  General Sports(20), Sports Science(10), Famous Athletes(10)
+// ============================================================
+const QUIZ_QUESTIONS = [
+  // ── CRICKET (25) ──
+  { q:"How many players are in a cricket team?", options:["9","10","11","12"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"How many balls make up one over in cricket?", options:["4","5","6","8"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"What is the length of a cricket pitch?", options:["18 yards","20 yards","22 yards","24 yards"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"In cricket, what is it called when a batsman is dismissed for zero runs?", options:["Blob","Duck","Egg","Zero"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"Which country has won the most ICC Cricket World Cups?", options:["India","West Indies","Australia","England"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"How many stumps are on each cricket wicket?", options:["2","3","4","5"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"What is it called when a bowler takes 3 wickets in 3 consecutive balls?", options:["Triple play","Hat-trick","Three-fer","Grand slam"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"What does 'LBW' stand for in cricket?", options:["Leg Before Wicket","Left Bat Width","Low Ball Warning","Lateral Bat Wicket"], correct:0, emoji:"🏏", category:"Cricket" },
+  { q:"How many bails sit on top of the cricket stumps?", options:["1","2","3","4"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"How many runs are scored when the ball clears the boundary rope without bouncing?", options:["4","5","6","7"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"Which Indian cricketer has scored the most international centuries?", options:["Virat Kohli","Ricky Ponting","Sachin Tendulkar","Brian Lara"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"In cricket, what is a 'maiden over'?", options:["First over of a match","An over with no runs scored","An over by a left-handed bowler","Last over of the innings"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"What colour ball is used in Test cricket?", options:["White","Pink","Red","Orange"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"In T20 cricket, how many overs does each team bat?", options:["10","15","20","25"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"What is the famous cricket series between England and Australia called?", options:["The Crown","The Ashes","The Burns","The Torch"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"How many runs does a batsman score for a boundary along the ground?", options:["3","4","5","6"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"In cricket, what is a score of exactly 100 runs called?", options:["Double","Half-century","Century","Grand"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"Which country is the birthplace of cricket?", options:["India","Australia","England","West Indies"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"What does 'ODI' stand for in cricket?", options:["One Day International","Official Day Innings","Open Delivery Innings","One Division International"], correct:0, emoji:"🏏", category:"Cricket" },
+  { q:"The 'Baggy Green' cap is associated with which cricket team?", options:["England","South Africa","New Zealand","Australia"], correct:3, emoji:"🏏", category:"Cricket" },
+  { q:"What is the maximum number of overs per innings in an ODI match?", options:["40","45","50","60"], correct:2, emoji:"🏏", category:"Cricket" },
+  { q:"What does 'DRS' stand for in cricket?", options:["Decision Review System","Direct Run Score","Delivery Rate Score","Default Response Signal"], correct:0, emoji:"🏏", category:"Cricket" },
+  { q:"Who holds the record for the highest individual Test score of 400 not out?", options:["Don Bradman","Brian Lara","Sachin Tendulkar","Garfield Sobers"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"In cricket, what is a batsman's score of 50 runs called?", options:["Quarter-century","Half-century","Double digit","Silver mark"], correct:1, emoji:"🏏", category:"Cricket" },
+  { q:"Which fielding position is directly behind the batsman in cricket?", options:["Slip","Gully","Fine Leg","Wicket Keeper"], correct:3, emoji:"🏏", category:"Cricket" },
+
+  // ── FOOTBALL / SOCCER (20) ──
+  { q:"How many players are on a football (soccer) team?", options:["9","10","11","12"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"How long is a standard football match?", options:["80 minutes","90 minutes","100 minutes","120 minutes"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"Which country has won the most FIFA World Cups?", options:["Germany","Italy","Argentina","Brazil"], correct:3, emoji:"⚽", category:"Football" },
+  { q:"What does FIFA stand for?", options:["Fédération Internationale de Football Association","Federal International Football Agency","Football International Federation Association","Federation for International Football Activities"], correct:0, emoji:"⚽", category:"Football" },
+  { q:"How many minutes is each half in a standard football match?", options:["40","45","50","60"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"What colour card causes a player to be sent off in football?", options:["Yellow","Orange","Red","Black"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"How many times has Brazil won the FIFA World Cup?", options:["3","4","5","6"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"Which country hosted the first FIFA World Cup in 1930?", options:["Brazil","France","Uruguay","Italy"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"In football, what is it called when a player scores three goals in one match?", options:["Triple","Hat-trick","Treble","Triple crown"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"Which footballer has won the most Ballon d'Or awards?", options:["Cristiano Ronaldo","Lionel Messi","Ronaldinho","Zinedine Zidane"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"Which country won the 2022 FIFA World Cup?", options:["France","Brazil","Argentina","England"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"In football, how many players can a team substitute in a standard match?", options:["3","4","5","6"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"In football, what is the basic principle of the offside rule?", options:["Cannot pass backwards","Attacker is ahead of last defender when ball is played","Cannot enter penalty box","Must stay in own half"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"How many black pentagons are on a traditional black and white football?", options:["10","12","14","16"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"Which football club has won the most UEFA Champions League titles?", options:["Barcelona","Bayern Munich","AC Milan","Real Madrid"], correct:3, emoji:"⚽", category:"Football" },
+  { q:"In which city is the FIFA headquarters located?", options:["Paris","London","Zurich","Geneva"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"How many points does a team earn for a win in most football leagues?", options:["2","3","4","1"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"What happens when the goalkeeper catches the ball from a teammate's deliberate kick-back?", options:["Corner kick","Indirect free kick to opponents","Direct free kick","Penalty kick"], correct:1, emoji:"⚽", category:"Football" },
+  { q:"From how many yards is a penalty kick taken in football?", options:["8 yards","10 yards","12 yards","16 yards"], correct:2, emoji:"⚽", category:"Football" },
+  { q:"In football, what does a yellow card represent?", options:["Dismissal","Caution or warning","Penalty awarded","Injury stoppage"], correct:1, emoji:"⚽", category:"Football" },
+
+  // ── BADMINTON (15) ──
+  { q:"Which country is credited with inventing Badminton?", options:["China","India","Denmark","England"], correct:3, emoji:"🏸", category:"Badminton" },
+  { q:"How many points make a standard badminton game?", options:["15","18","21","25"], correct:2, emoji:"🏸", category:"Badminton" },
+  { q:"What is another common name for the shuttlecock in badminton?", options:["Birdie","Puck","Feather ball","Volley"], correct:0, emoji:"🏸", category:"Badminton" },
+  { q:"How many feathers does a regulation badminton shuttlecock have?", options:["12","14","16","18"], correct:2, emoji:"🏸", category:"Badminton" },
+  { q:"In badminton doubles, how many players are on each side of the net?", options:["1","2","3","4"], correct:1, emoji:"🏸", category:"Badminton" },
+  { q:"In which year was badminton first included in the Olympic Games?", options:["1984","1988","1992","1996"], correct:2, emoji:"🏸", category:"Badminton" },
+  { q:"What is the scoring format in a badminton match?", options:["First to 15 points","Best of 3 games to 21","Best of 5 games to 15","First to 30 points"], correct:1, emoji:"🏸", category:"Badminton" },
+  { q:"PV Sindhu is a famous badminton player from which country?", options:["China","Thailand","Malaysia","India"], correct:3, emoji:"🏸", category:"Badminton" },
+  { q:"What material is a professional badminton shuttlecock traditionally made from?", options:["Plastic feathers","Real goose or duck feathers","Synthetic fibre","Nylon mesh"], correct:1, emoji:"🏸", category:"Badminton" },
+  { q:"In badminton, what must a player win by to secure a game?", options:["Exactly 21 points","By at least 2 clear points","By at least 3 points","First to 21 regardless"], correct:1, emoji:"🏸", category:"Badminton" },
+  { q:"The Thomas Cup is a major team championship in which sport?", options:["Table Tennis","Tennis","Badminton","Squash"], correct:2, emoji:"🏸", category:"Badminton" },
+  { q:"What is the maximum score at which a badminton game ends automatically?", options:["25","28","29","30"], correct:3, emoji:"🏸", category:"Badminton" },
+  { q:"How high is the badminton net at the centre of the court?", options:["1.34 m","1.524 m","1.7 m","2.0 m"], correct:1, emoji:"🏸", category:"Badminton" },
+  { q:"In which country are the famous All England Badminton Championships held?", options:["Denmark","China","Malaysia","England"], correct:3, emoji:"🏸", category:"Badminton" },
+  { q:"How wide is a badminton singles court?", options:["4.6 m","5.18 m","6.1 m","7.0 m"], correct:1, emoji:"🏸", category:"Badminton" },
+
+  // ── OLYMPICS (20) ──
+  { q:"How many rings are on the Olympic flag?", options:["4","5","6","7"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"In which year were the first modern Olympic Games held?", options:["1886","1896","1900","1904"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"In which city were the first modern Olympics held?", options:["Paris","London","Rome","Athens"], correct:3, emoji:"🏅", category:"Olympics" },
+  { q:"How often are the Summer Olympic Games held?", options:["Every 2 years","Every 3 years","Every 4 years","Every 5 years"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"What do the five Olympic rings represent?", options:["Five continents","Five original sports","Five founding members","Five Olympic values"], correct:0, emoji:"🏅", category:"Olympics" },
+  { q:"Which country has won the most gold medals in Summer Olympics history?", options:["Russia","China","Great Britain","United States"], correct:3, emoji:"🏅", category:"Olympics" },
+  { q:"What is the Olympic motto?", options:["Swifter, Higher, Stronger","Faster, Higher, Stronger — Together","Run, Jump, Swim","Play Fair, Win Fair"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"In which year did India win its first individual Olympic gold medal?", options:["1980","1996","2008","2012"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"Which swimmer has won the most Olympic gold medals in history?", options:["Ian Thorpe","Mark Spitz","Michael Phelps","Ryan Lochte"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"In which city were the 2020 Summer Olympics held?", options:["Paris","Tokyo","Seoul","Beijing"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"What material is an Olympic gold medal primarily made of?", options:["Pure gold","Gold-plated silver","Gold-plated bronze","Titanium"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"Which country hosted the 2016 Summer Olympics?", options:["Colombia","Argentina","Brazil","Chile"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"The Olympic flame is traditionally lit using the sun's rays at which location?", options:["Athens stadium","Olympia, Greece","Paris","Mount Olympus"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"In the Olympics, what colour is the first-place medal?", options:["Bronze","Silver","Gold","Platinum"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"Were women allowed to compete in the first modern Olympics in 1896?", options:["Yes, in all sports","Yes, but only in tennis","No, women were excluded","Yes, in swimming only"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"Which country hosted the 2024 Summer Olympics?", options:["Japan","USA","France","Germany"], correct:2, emoji:"🏅", category:"Olympics" },
+  { q:"Which sport has featured in every Summer Olympics since 1896?", options:["Swimming","Athletics (Track & Field)","Cycling","Gymnastics"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"Paris hosted the Olympics in 1900, 1924 and again in which year?", options:["2012","2016","2020","2024"], correct:3, emoji:"🏅", category:"Olympics" },
+  { q:"How many sports were featured at the original 1896 Olympic Games?", options:["5","9","14","20"], correct:1, emoji:"🏅", category:"Olympics" },
+  { q:"Which athlete dominated the 1936 Berlin Olympics by winning four gold medals?", options:["Jesse Owens","Carl Lewis","Jim Thorpe","Bob Beamon"], correct:0, emoji:"🏅", category:"Olympics" },
+
+  // ── SWIMMING (15) ──
+  { q:"How long is an Olympic swimming pool?", options:["25 m","40 m","50 m","100 m"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"How many swimming strokes are used in the individual medley?", options:["2","3","4","5"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"Which swimming stroke requires swimmers to lie on their back?", options:["Freestyle","Butterfly","Backstroke","Breaststroke"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"What is the shortest Olympic swimming race distance?", options:["25 m","50 m","100 m","200 m"], correct:1, emoji:"🏊", category:"Swimming" },
+  { q:"What do competitive swimmers wear on their eyes?", options:["Masks","Goggles","Visors","Glasses"], correct:1, emoji:"🏊", category:"Swimming" },
+  { q:"In which swimming stroke do competitors move both arms simultaneously above the water?", options:["Breaststroke","Backstroke","Freestyle","Butterfly"], correct:3, emoji:"🏊", category:"Swimming" },
+  { q:"What is it called when a swimmer starts before the starting signal?", options:["Early start","False start","Penalty start","Jump start"], correct:1, emoji:"🏊", category:"Swimming" },
+  { q:"How many swimmers are in an Olympic 4×100 m relay team?", options:["2","3","4","5"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"What do swimmers use to reduce drag on their hair?", options:["Hair gel","Swimming cap","Headband","Braids"], correct:1, emoji:"🏊", category:"Swimming" },
+  { q:"Which country is legendary swimmer Michael Phelps from?", options:["Australia","Great Britain","United States","Canada"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"How many Olympic gold medals did Michael Phelps win in his career?", options:["14","18","23","28"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"How wide is each lane in an Olympic swimming pool?", options:["1.5 m","2 m","2.5 m","3 m"], correct:2, emoji:"🏊", category:"Swimming" },
+  { q:"In butterfly stroke, how many dolphin kicks are performed per arm cycle?", options:["1","2","3","4"], correct:1, emoji:"🏊", category:"Swimming" },
+  { q:"What is the term for an electronic pad at each end of the pool that records finish times?", options:["Turn marker","Touch pad","Finish block","Time recorder"], correct:1, emoji:"🏊", category:"Swimming" },
+  { q:"In which swimming stroke are both arms pulled simultaneously under water while the legs do a frog kick?", options:["Freestyle","Butterfly","Backstroke","Breaststroke"], correct:3, emoji:"🏊", category:"Swimming" },
+
+  // ── TENNIS (15) ──
+  { q:"In men's Grand Slam tennis, how many sets must a player win to win the match?", options:["2 sets","3 sets","4 sets","5 sets"], correct:1, emoji:"🎾", category:"Tennis" },
+  { q:"What surface is the Wimbledon tennis championship played on?", options:["Clay","Hard court","Grass","Carpet"], correct:2, emoji:"🎾", category:"Tennis" },
+  { q:"In tennis, what is the score called when both players are at 40-40?", options:["Tie","Deuce","Even","Equal"], correct:1, emoji:"🎾", category:"Tennis" },
+  { q:"What is the name for a serve that the opponent cannot touch?", options:["Ace","Winner","Perfect serve","Clean serve"], correct:0, emoji:"🎾", category:"Tennis" },
+  { q:"Who holds the record for the most Grand Slam singles titles in tennis history?", options:["Roger Federer","Novak Djokovic","Rafael Nadal","Pete Sampras"], correct:1, emoji:"🎾", category:"Tennis" },
+  { q:"What does 'love' mean in tennis scoring?", options:["1 point","Zero (no points)","Game point","Advantage"], correct:1, emoji:"🎾", category:"Tennis" },
+  { q:"What surface is the French Open (Roland Garros) played on?", options:["Grass","Hard court","Clay","Carpet"], correct:2, emoji:"🎾", category:"Tennis" },
+  { q:"In tennis, what is it called when a set score reaches 6-6 and a deciding game is played?", options:["Super game","Tiebreak","Deuce set","Golden set"], correct:1, emoji:"🎾", category:"Tennis" },
+  { q:"How many sets are played in a women's Grand Slam match?", options:["Best of 3","Best of 5","Best of 7","Single set"], correct:0, emoji:"🎾", category:"Tennis" },
+  { q:"How many Grand Slam singles titles did Serena Williams win?", options:["15","20","23","28"], correct:2, emoji:"🎾", category:"Tennis" },
+  { q:"Which tennis tournament is the oldest Grand Slam?", options:["US Open","French Open","Australian Open","Wimbledon"], correct:3, emoji:"🎾", category:"Tennis" },
+  { q:"In tennis, what is it called when a server commits two faults in a row?", options:["Double fault","Double error","Service fault","Out serve"], correct:0, emoji:"🎾", category:"Tennis" },
+  { q:"What are the four Grand Slam tournaments?", options:["Australian Open, French Open, Wimbledon, US Open","Australian Open, French Open, US Open, Canadian Open","Wimbledon, French Open, Miami Open, US Open","Australian Open, Indian Wells, Wimbledon, US Open"], correct:0, emoji:"🎾", category:"Tennis" },
+  { q:"In tennis, a set won 6-0 is informally called what?", options:["Clean sweep","Bagel","Perfect set","Shutout"], correct:1, emoji:"🎾", category:"Tennis" },
+  { q:"Who is nicknamed 'The King of Clay' in tennis?", options:["Roger Federer","Novak Djokovic","Rafael Nadal","Andre Agassi"], correct:2, emoji:"🎾", category:"Tennis" },
+
+  // ── BASKETBALL (15) ──
+  { q:"How many players are on a basketball court per team during play?", options:["4","5","6","7"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"How high is a standard basketball hoop from the ground?", options:["8 feet","9 feet","10 feet","11 feet"], correct:2, emoji:"🏀", category:"Basketball" },
+  { q:"What is the diameter of a standard basketball hoop in inches?", options:["16 inches","18 inches","20 inches","22 inches"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"How many points is a shot from beyond the three-point line worth?", options:["2","3","4","5"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"How long is each quarter in NBA basketball?", options:["10 minutes","12 minutes","15 minutes","20 minutes"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"Which player is nicknamed 'His Airness' and is considered one of the greatest ever?", options:["LeBron James","Kobe Bryant","Michael Jordan","Magic Johnson"], correct:2, emoji:"🏀", category:"Basketball" },
+  { q:"In the NBA, how many personal fouls before a player is disqualified?", options:["4","5","6","7"], correct:2, emoji:"🏀", category:"Basketball" },
+  { q:"How many seconds does a team have to shoot in the NBA (shot clock)?", options:["14 seconds","20 seconds","24 seconds","30 seconds"], correct:2, emoji:"🏀", category:"Basketball" },
+  { q:"Who invented the sport of basketball in 1891?", options:["Michael Jordan","James Naismith","Abraham Lincoln","Bill Russell"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"How many points is a free throw worth in basketball?", options:["1","2","3","4"], correct:0, emoji:"🏀", category:"Basketball" },
+  { q:"What is the NBA championship trophy called?", options:["The Gold Trophy","Larry O'Brien Championship Trophy","The Ball Trophy","The Grand Cup"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"In basketball, what is a 'slam dunk'?", options:["A defensive block","Scoring by jumping and forcing ball through hoop","A behind-the-back pass","Stealing the ball"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"How many NBA teams are there?", options:["25","28","30","32"], correct:2, emoji:"🏀", category:"Basketball" },
+  { q:"How many seconds does a team have to advance past half-court in the NBA?", options:["5 seconds","8 seconds","10 seconds","24 seconds"], correct:1, emoji:"🏀", category:"Basketball" },
+  { q:"Which team has won the most NBA championships?", options:["Los Angeles Lakers","Boston Celtics","Chicago Bulls","Golden State Warriors"], correct:1, emoji:"🏀", category:"Basketball" },
+
+  // ── ATHLETICS / TRACK & FIELD (15) ──
+  { q:"How long is a standard marathon distance?", options:["40 km (24.8 miles)","42.195 km (26.2 miles)","45 km (28 miles)","50 km (31 miles)"], correct:1, emoji:"🏃", category:"Athletics" },
+  { q:"How many hurdles are in a standard 110 m hurdles race?", options:["8","10","12","14"], correct:1, emoji:"🏃", category:"Athletics" },
+  { q:"What is the standard length of an athletics track?", options:["200 m","300 m","400 m","500 m"], correct:2, emoji:"🏃", category:"Athletics" },
+  { q:"How many runners are in a 4×100 m relay team?", options:["2","3","4","5"], correct:2, emoji:"🏃", category:"Athletics" },
+  { q:"Which country's athlete Usain Bolt holds the 100 m world record?", options:["USA","Kenya","Jamaica","Nigeria"], correct:2, emoji:"🏃", category:"Athletics" },
+  { q:"What is Usain Bolt's 100 m world record time?", options:["9.56 seconds","9.58 seconds","9.63 seconds","9.72 seconds"], correct:1, emoji:"🏃", category:"Athletics" },
+  { q:"The decathlon consists of how many events?", options:["8","9","10","12"], correct:2, emoji:"🏃", category:"Athletics" },
+  { q:"In athletics, what is the event where competitors throw a heavy metal ball called?", options:["Discus","Hammer","Shot put","Javelin"], correct:2, emoji:"🏃", category:"Athletics" },
+  { q:"In athletics, what is the 'steeplechase' race?", options:["A race with hurdles and a water jump","A race on horseback","A cross-country race","A race with 3000 obstacles"], correct:0, emoji:"🏃", category:"Athletics" },
+  { q:"Which regions have historically dominated long-distance running at the Olympics?", options:["USA","Kenya and Ethiopia","Jamaica","Germany"], correct:1, emoji:"🏃", category:"Athletics" },
+  { q:"What is the high jump technique where the jumper goes over the bar backwards called?", options:["Fosbury Flop","Straddle","Scissors","Western Roll"], correct:0, emoji:"🏃", category:"Athletics" },
+  { q:"The heptathlon athletics competition is for which gender?", options:["Men only","Women only","Both equally","Mixed teams"], correct:1, emoji:"🏃", category:"Athletics" },
+  { q:"In track and field, which event involves athletes throwing a long spear-like implement?", options:["Discus","Hammer throw","Shot put","Javelin"], correct:3, emoji:"🏃", category:"Athletics" },
+  { q:"In which event do athletes use a long pole to leap over a high bar?", options:["High jump","Pole vault","Long jump","Triple jump"], correct:1, emoji:"🏃", category:"Athletics" },
+  { q:"Which Indian athlete won a historic gold medal at the 2020 Tokyo Olympics in javelin throw?", options:["Milkha Singh","P.T. Usha","Neeraj Chopra","Anju Bobby George"], correct:2, emoji:"🏃", category:"Athletics" },
+
+  // ── CHESS (10) ──
+  { q:"How many pieces does each player start with in chess?", options:["14","16","18","20"], correct:1, emoji:"♟️", category:"Chess" },
+  { q:"How many squares are on a chessboard?", options:["48","56","64","72"], correct:2, emoji:"♟️", category:"Chess" },
+  { q:"Which chess piece can only move diagonally?", options:["Rook","Knight","Bishop","King"], correct:2, emoji:"♟️", category:"Chess" },
+  { q:"What is it called when the king is under direct attack in chess?", options:["Check","Checkmate","Stalemate","Fork"], correct:0, emoji:"♟️", category:"Chess" },
+  { q:"Which is the most powerful piece in chess?", options:["King","Queen","Bishop","Rook"], correct:1, emoji:"♟️", category:"Chess" },
+  { q:"What is it called when a player has no legal move but is not in check?", options:["Checkmate","Stalemate","Draw","Forfeit"], correct:1, emoji:"♟️", category:"Chess" },
+  { q:"The knight in chess moves in which pattern?", options:["Straight line","Diagonal only","L-shape","Any direction one square"], correct:2, emoji:"♟️", category:"Chess" },
+  { q:"What is 'pawn promotion' in chess?", options:["Moving a pawn forward 2 squares","Capturing with a pawn","Advancing a pawn to the last rank to become another piece","Protecting the king with pawns"], correct:2, emoji:"♟️", category:"Chess" },
+  { q:"What is the highest title awarded by FIDE (the chess governing body)?", options:["Master","International Master","Grandmaster","Chess Champion"], correct:2, emoji:"♟️", category:"Chess" },
+  { q:"Which Norwegian player became the youngest World Chess Champion in 2013?", options:["Bobby Fischer","Garry Kasparov","Magnus Carlsen","Vishy Anand"], correct:2, emoji:"♟️", category:"Chess" },
+
+  // ── TABLE TENNIS (10) ──
+  { q:"How many points win a standard table tennis game?", options:["9","11","15","21"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"What is the diameter of a standard table tennis ball?", options:["38 mm","40 mm","42 mm","44 mm"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"Which country has historically dominated world table tennis?", options:["Japan","South Korea","Germany","China"], correct:3, emoji:"🏓", category:"Table Tennis" },
+  { q:"How high is the table tennis net?", options:["12.25 cm","15.25 cm","18.25 cm","20.25 cm"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"In which year was table tennis introduced to the Olympics?", options:["1980","1984","1988","1992"], correct:2, emoji:"🏓", category:"Table Tennis" },
+  { q:"What colours must the two sides of a table tennis bat be?", options:["Red and blue","Red and black","Green and red","Yellow and black"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"How long is a standard table tennis table?", options:["2.4 m","2.74 m","3 m","3.5 m"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"What must happen at 10-10 in a table tennis game?", options:["A coin toss decides","Players must win by 2 clear points","A sudden death point","The server wins"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"In a table tennis serve, where must the ball bounce first?", options:["Opponent's side only","Server's side first, then over the net","Directly over the net without bouncing","Anywhere on the table"], correct:1, emoji:"🏓", category:"Table Tennis" },
+  { q:"What does ITTF stand for in table tennis?", options:["International Table Tennis Federation","International Tournament for Tennis and Football","International Team Tennis Federation","International Table Tennis Forum"], correct:0, emoji:"🏓", category:"Table Tennis" },
+
+  // ── GENERAL SPORTS (20) ──
+  { q:"How many events are in a triathlon?", options:["2","3","4","5"], correct:1, emoji:"🏅", category:"General Sports" },
+  { q:"Which sport uses a puck instead of a ball?", options:["Polo","Lacrosse","Ice Hockey","Curling"], correct:2, emoji:"🏒", category:"General Sports" },
+  { q:"How many holes are in a standard golf course?", options:["9","12","18","24"], correct:2, emoji:"⛳", category:"General Sports" },
+  { q:"How long is each round in professional boxing?", options:["2 minutes","3 minutes","4 minutes","5 minutes"], correct:1, emoji:"🥊", category:"General Sports" },
+  { q:"In rugby union, how many points is a 'try' worth?", options:["3","4","5","6"], correct:2, emoji:"🏉", category:"General Sports" },
+  { q:"Which sport uses terms like birdie, eagle and bogey?", options:["Tennis","Cricket","Golf","Badminton"], correct:2, emoji:"⛳", category:"General Sports" },
+  { q:"How many players are on a volleyball team on the court?", options:["4","5","6","7"], correct:2, emoji:"🏐", category:"General Sports" },
+  { q:"In football, what is a 'penalty corner'?", options:["Corner kick from the post","A corner kick in basketball","A set piece awarded in field hockey","A rugby corner penalty"], correct:2, emoji:"🏑", category:"General Sports" },
+  { q:"What does 'par' mean in golf?", options:["A hole in one shot","The expected number of strokes for a hole","A score of one under expected","A missed putt"], correct:1, emoji:"⛳", category:"General Sports" },
+  { q:"Which sport features the 'Tour de France' as its most famous race?", options:["Athletics","Horse racing","Cycling","Triathlon"], correct:2, emoji:"🚴", category:"General Sports" },
+  { q:"How many players are on a baseball team in the field?", options:["8","9","10","11"], correct:1, emoji:"⚾", category:"General Sports" },
+  { q:"In American football, how many points is a touchdown worth?", options:["4","5","6","7"], correct:2, emoji:"🏈", category:"General Sports" },
+  { q:"What is the term for scoring one under par in golf?", options:["Eagle","Birdie","Bogey","Albatross"], correct:1, emoji:"⛳", category:"General Sports" },
+  { q:"What sport takes place in a velodrome?", options:["Athletics","Swimming","Track Cycling","Roller Derby"], correct:2, emoji:"🚴", category:"General Sports" },
+  { q:"How many players are in a netball team?", options:["5","6","7","8"], correct:2, emoji:"🏐", category:"General Sports" },
+  { q:"In which sport would you perform a 'smash', a 'drop shot' and a 'lob'?", options:["Table Tennis","Tennis or Badminton","Squash","All of these"], correct:3, emoji:"🎾", category:"General Sports" },
+  { q:"How many players are on a field hockey team?", options:["9","10","11","12"], correct:2, emoji:"🏑", category:"General Sports" },
+  { q:"In which sport do players bowl, bat and field?", options:["Softball","Cricket","Baseball","Both cricket and baseball"], correct:3, emoji:"⚾", category:"General Sports" },
+  { q:"The Ashes cricket series is played between England and which other country?", options:["India","New Zealand","South Africa","Australia"], correct:3, emoji:"🏏", category:"General Sports" },
+  { q:"What is it called when a golfer completes a hole in just one stroke?", options:["Par","Eagle","Hole in one","Albatross"], correct:2, emoji:"⛳", category:"General Sports" },
+
+  // ── SPORTS SCIENCE (10) ──
+  { q:"What does 'aerobic' exercise primarily use for energy?", options:["Creatine","Glycogen only","Oxygen","Fat stores only"], correct:2, emoji:"🔬", category:"Sports Science" },
+  { q:"What is the typical resting heart rate for a healthy adult?", options:["40–50 bpm","60–100 bpm","100–120 bpm","120–140 bpm"], correct:1, emoji:"🔬", category:"Sports Science" },
+  { q:"What does 'BMI' stand for?", options:["Body Mass Index","Basic Muscle Intensity","Body Movement Index","Balance Measurement Indicator"], correct:0, emoji:"🔬", category:"Sports Science" },
+  { q:"Which muscle is commonly called the 'calf muscle'?", options:["Bicep","Tricep","Gastrocnemius","Quadriceps"], correct:2, emoji:"🔬", category:"Sports Science" },
+  { q:"What is the medical term for a pulled muscle?", options:["Fracture","Sprain","Strain","Contusion"], correct:2, emoji:"🔬", category:"Sports Science" },
+  { q:"How many bones are in an adult human body?", options:["186","206","226","246"], correct:1, emoji:"🔬", category:"Sports Science" },
+  { q:"What does 'RICE' stand for in sports injury first aid?", options:["Run, Ice, Compress, Elevate","Rest, Ice, Compression, Elevation","Recover, Immobilize, Cool, Examine","Relax, Inject, Cool, Evaluate"], correct:1, emoji:"🔬", category:"Sports Science" },
+  { q:"Approximately what percentage of the adult human body is made up of water?", options:["40–50%","50–55%","60–65%","70–80%"], correct:2, emoji:"🔬", category:"Sports Science" },
+  { q:"Which nutrient is the primary fuel source for high-intensity exercise?", options:["Protein","Fat","Carbohydrates","Vitamins"], correct:2, emoji:"🔬", category:"Sports Science" },
+  { q:"What is 'lactic acid' most associated with in sport?", options:["Improved endurance","Muscle fatigue and burning sensation","Instant energy","Better hydration"], correct:1, emoji:"🔬", category:"Sports Science" },
+
+  // ── FAMOUS ATHLETES (10) ──
+  { q:"Which Indian cricketer is known as the 'God of Cricket'?", options:["MS Dhoni","Virat Kohli","Sachin Tendulkar","Kapil Dev"], correct:2, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Muhammad Ali was a legendary world champion in which sport?", options:["Wrestling","Boxing","Judo","MMA"], correct:1, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Roger Federer is one of the greatest players in which sport?", options:["Football","Swimming","Tennis","Badminton"], correct:2, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Which country does footballer Lionel Messi represent?", options:["Brazil","Spain","Portugal","Argentina"], correct:3, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Neeraj Chopra won India's historic Olympic gold medal in which event?", options:["100 m sprint","Long jump","Javelin throw","Triple jump"], correct:2, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Michael Schumacher held records as a driver in which sport?", options:["Rallying","Formula 1","NASCAR","MotoGP"], correct:1, emoji:"⭐", category:"Famous Athletes" },
+  { q:"P.V. Sindhu became a world champion in which sport?", options:["Tennis","Squash","Table Tennis","Badminton"], correct:3, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Which basketball player was nicknamed 'Black Mamba'?", options:["LeBron James","Michael Jordan","Kobe Bryant","Shaquille O'Neal"], correct:2, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Milkha Singh was nicknamed 'The Flying Sikh'. In which sport did he excel?", options:["Cycling","Swimming","Athletics (sprinting)","Boxing"], correct:2, emoji:"⭐", category:"Famous Athletes" },
+  { q:"Which female tennis player won a record 23 Grand Slam singles titles?", options:["Steffi Graf","Martina Navratilova","Serena Williams","Venus Williams"], correct:2, emoji:"⭐", category:"Famous Athletes" },
+];
+
+function getTodaysQuestion() {
+  const startDate = new Date('2026-04-01');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  startDate.setHours(0, 0, 0, 0);
+  const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+  const index = ((daysDiff % QUIZ_QUESTIONS.length) + QUIZ_QUESTIONS.length) % QUIZ_QUESTIONS.length;
+  return { question: QUIZ_QUESTIONS[index], questionIndex: index, dayNumber: daysDiff + 1 };
+}
+
 // ── Admin phone — change this to your phone number ──
 const ADMIN_PHONE = "9945648475";
 
@@ -375,6 +620,11 @@ let userProfile        = null;
 let blockChart         = null;
 let deleteTargetId     = null;
 let deleteTargetName   = null;
+
+// ── Quiz state ──
+let _quizSelectedAnswer  = null;
+let _quizCurrentQuestion = null;
+let _quizCurrentIndex    = null;
 
 // ── Subcategory icon map ──
 const SUBCATEGORY_ICONS = {
@@ -541,31 +791,57 @@ function skipAdminVerification() {
 // ── Tab bar renderer — called after profile loads so admin tab is conditional ──
 function renderTabBar() {
   const inner = document.querySelector('.tab-bar-inner');
-  inner.innerHTML = `
-    <div class="tab-item" data-tab="home" onclick="switchTab('home')">
-      <span class="tab-icon">🏠</span>
-      <span class="tab-dot"></span>
-      <span class="tab-label">Home</span>
-    </div>
-    <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
-      <span class="tab-icon">📊</span>
-      <span class="tab-dot"></span>
-      <span class="tab-label">Dashboard</span>
-    </div>
-    <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
-      <div class="tab-icon-wrap">
-        <span class="tab-icon">📋</span>
-        <span class="tab-badge" id="tab-mylist-badge"></span>
+  if (isAdmin()) {
+    inner.innerHTML = `
+      <div class="tab-item" data-tab="home" onclick="switchTab('home')">
+        <span class="tab-icon">🏠</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Home</span>
       </div>
-      <span class="tab-dot"></span>
-      <span class="tab-label">My List</span>
-    </div>
-    ${isAdmin() ? `<div class="tab-item admin-tab" data-tab="admin" onclick="switchTab('admin')">
-      <span class="tab-icon">👑</span>
-      <span class="tab-dot"></span>
-      <span class="tab-label">Admin</span>
-    </div>` : ''}
-  `;
+      <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="tab-icon">📊</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Dashboard</span>
+      </div>
+      <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
+        <div class="tab-icon-wrap">
+          <span class="tab-icon">📋</span>
+          <span class="tab-badge" id="tab-mylist-badge"></span>
+        </div>
+        <span class="tab-dot"></span>
+        <span class="tab-label">My List</span>
+      </div>
+      <div class="tab-item admin-tab" data-tab="admin" onclick="switchTab('admin')">
+        <span class="tab-icon">👑</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Admin</span>
+      </div>`;
+  } else {
+    inner.innerHTML = `
+      <div class="tab-item" data-tab="home" onclick="switchTab('home')">
+        <span class="tab-icon">🏠</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Home</span>
+      </div>
+      <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="tab-icon">📊</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Dashboard</span>
+      </div>
+      <div class="tab-item" data-tab="quiz" onclick="switchTab('quiz')">
+        <span class="tab-icon">🧠</span>
+        <span class="tab-dot"></span>
+        <span class="tab-label">Quiz</span>
+      </div>
+      <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
+        <div class="tab-icon-wrap">
+          <span class="tab-icon">📋</span>
+          <span class="tab-badge" id="tab-mylist-badge"></span>
+        </div>
+        <span class="tab-dot"></span>
+        <span class="tab-label">My List</span>
+      </div>`;
+  }
   updateMyListBadge();
 }
 
@@ -1249,7 +1525,7 @@ function renderAdminDataSection(container, allDocs) {
 }
 
 // ── Navigation ──
-const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations', 'screen-admin'];
+const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations', 'screen-admin', 'screen-quiz'];
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1261,6 +1537,7 @@ function showScreen(id) {
   if (id === 'screen-dashboard')     loadDashboard();
   if (id === 'screen-graph')         loadBlockGraph();
   if (id === 'screen-sports')        loadAnnouncementBanner();
+  if (id === 'screen-quiz')          loadQuizScreen();
 }
 
 function switchTab(tabName) {
@@ -1268,7 +1545,8 @@ function switchTab(tabName) {
     home:      'screen-sports',
     dashboard: 'screen-dashboard',
     mylist:    'screen-registrations',
-    admin:     'screen-admin'
+    admin:     'screen-admin',
+    quiz:      'screen-quiz'
   };
   showScreen(screenMap[tabName]);
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
@@ -1894,6 +2172,238 @@ function resetProfile() {
   }
 }
 
+// ── QUIZ FUNCTIONS ──
+
+async function loadQuizScreen() {
+  const today   = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+
+  const dayNames   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monthNames = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+  const dayName   = dayNames[today.getDay()];
+  const dayNum    = String(today.getDate()).padStart(2, '0');
+  const monthName = monthNames[today.getMonth()];
+  const year      = today.getFullYear();
+
+  const { question, questionIndex, dayNumber } = getTodaysQuestion();
+
+  document.getElementById('quiz-date-banner').innerHTML = `
+    <div class="date-banner-card">
+      <div class="date-banner-day">${dayNum}</div>
+      <div class="date-banner-info">
+        <div class="date-banner-weekday">${dayName}</div>
+        <div class="date-banner-full">${monthName} ${year} · Question #${dayNumber}</div>
+      </div>
+      <div class="date-banner-emoji">${question.emoji}</div>
+    </div>`;
+
+  const answerDocId = userProfile.phone + '_' + dateStr;
+  showLoading(true);
+  try {
+    const answerSnap = await getDoc(doc(db, 'quizAnswers', answerDocId));
+    const scoreSnap  = await getDoc(doc(db, 'quizScores', userProfile.phone));
+    const totalPoints    = scoreSnap.exists() ? scoreSnap.data().totalPoints    : 0;
+    const correctAnswers = scoreSnap.exists() ? scoreSnap.data().correctAnswers : 0;
+    const totalAnswered  = scoreSnap.exists() ? scoreSnap.data().totalAnswered  : 0;
+
+    document.getElementById('quiz-score-pill').textContent = totalPoints + ' pts';
+
+    if (answerSnap.exists()) {
+      renderQuizAnswered(question, answerSnap.data(), totalPoints, correctAnswers, totalAnswered);
+    } else {
+      renderQuizQuestion(question, questionIndex);
+    }
+    loadQuizLeaderboard();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('quiz-content').innerHTML =
+      '<div class="quiz-error">Could not load quiz. Please try again.</div>';
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderQuizQuestion(question, questionIndex) {
+  _quizSelectedAnswer  = null;
+  _quizCurrentQuestion = question;
+  _quizCurrentIndex    = questionIndex;
+
+  const letters = ['A', 'B', 'C', 'D'];
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="quiz-q-card">
+      <div class="quiz-q-category">${question.category}</div>
+      <span class="quiz-q-emoji">${question.emoji}</span>
+      <div class="quiz-q-text">${question.q}</div>
+    </div>
+    <div class="quiz-options" id="quiz-options-list">
+      ${question.options.map((opt, i) => `
+        <button class="quiz-option" data-index="${i}" onclick="selectQuizOption(${i})">
+          <span class="quiz-option-letter">${letters[i]}</span>
+          <span>${opt}</span>
+        </button>`).join('')}
+    </div>
+    <button class="quiz-submit-btn" id="quiz-submit-btn" disabled onclick="submitQuizAnswerWrap()">
+      Submit Answer →
+    </button>`;
+}
+
+function selectQuizOption(index) {
+  _quizSelectedAnswer = index;
+  document.querySelectorAll('.quiz-option').forEach((el, i) => {
+    el.classList.toggle('selected', i === index);
+  });
+  const btn = document.getElementById('quiz-submit-btn');
+  if (btn) btn.disabled = false;
+}
+
+function submitQuizAnswerWrap() {
+  submitQuizAnswer(_quizCurrentQuestion, _quizCurrentIndex, _quizSelectedAnswer);
+}
+
+async function submitQuizAnswer(question, questionIndex, selectedIndex) {
+  if (selectedIndex === null) return;
+
+  const today   = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+  const isCorrect = selectedIndex === question.correct;
+  const points    = isCorrect ? 10 : 0;
+
+  showLoading(true);
+  try {
+    const answerDocId = userProfile.phone + '_' + dateStr;
+    await setDoc(doc(db, 'quizAnswers', answerDocId), {
+      phone:          userProfile.phone,
+      name:           userProfile.name,
+      date:           dateStr,
+      questionIndex:  questionIndex,
+      selectedAnswer: selectedIndex,
+      isCorrect:      isCorrect,
+      points:         points,
+      answeredAt:     serverTimestamp()
+    });
+
+    const scoreRef  = doc(db, 'quizScores', userProfile.phone);
+    const scoreSnap = await getDoc(scoreRef);
+    if (scoreSnap.exists()) {
+      const ex = scoreSnap.data();
+      await setDoc(scoreRef, {
+        phone:          userProfile.phone,
+        name:           userProfile.name,
+        flat:           userProfile.flat,
+        totalPoints:    ex.totalPoints    + points,
+        totalAnswered:  ex.totalAnswered  + 1,
+        correctAnswers: ex.correctAnswers + (isCorrect ? 1 : 0),
+        lastAnswered:   dateStr,
+        updatedAt:      serverTimestamp()
+      });
+    } else {
+      await setDoc(scoreRef, {
+        phone:          userProfile.phone,
+        name:           userProfile.name,
+        flat:           userProfile.flat,
+        totalPoints:    points,
+        totalAnswered:  1,
+        correctAnswers: isCorrect ? 1 : 0,
+        lastAnswered:   dateStr,
+        updatedAt:      serverTimestamp()
+      });
+    }
+
+    loadQuizScreen();
+  } catch (err) {
+    console.error(err);
+    showToast('Could not save answer. Try again.', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderQuizAnswered(question, answerData, totalPoints, correctAnswers, totalAnswered) {
+  const letters   = ['A', 'B', 'C', 'D'];
+  const selected  = answerData.selectedAnswer;
+  const correct   = question.correct;
+  const isCorrect = answerData.isCorrect;
+
+  const resultHTML = isCorrect
+    ? `<div class="quiz-result-correct">
+        <div class="quiz-result-icon">🎉</div>
+        <div class="quiz-result-title">Correct!</div>
+        <div class="quiz-result-sub">You earned +10 points. Well done!</div>
+       </div>`
+    : `<div class="quiz-result-wrong">
+        <div class="quiz-result-icon">😔</div>
+        <div class="quiz-result-title">Not quite!</div>
+        <div class="quiz-result-sub">Better luck tomorrow!</div>
+        <div class="quiz-result-correct-answer">
+          Correct answer: <strong>${letters[correct]}. ${question.options[correct]}</strong>
+        </div>
+       </div>`;
+
+  const optionsHTML = question.options.map((opt, i) => {
+    let cls = 'quiz-option disabled';
+    if (i === correct)                     cls += ' correct';
+    else if (i === selected && !isCorrect) cls += ' wrong';
+    return `<div class="${cls}">
+      <span class="quiz-option-letter">${letters[i]}</span>
+      <span>${opt}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="quiz-answered-banner">You have already answered today's question.</div>
+    ${resultHTML}
+    <div class="quiz-q-card" style="margin-bottom:14px">
+      <div class="quiz-q-category">${question.category}</div>
+      <span class="quiz-q-emoji">${question.emoji}</span>
+      <div class="quiz-q-text">${question.q}</div>
+    </div>
+    <div class="quiz-options" style="margin-bottom:16px">${optionsHTML}</div>
+    <div class="quiz-personal-score">
+      <div class="quiz-score-value">${totalPoints}</div>
+      <div class="quiz-score-label">total points · ${correctAnswers} correct out of ${totalAnswered} answered</div>
+    </div>
+    <div class="quiz-tomorrow-text">Come back tomorrow for the next question!</div>`;
+}
+
+async function loadQuizLeaderboard() {
+  const lb = document.getElementById('quiz-leaderboard');
+  if (!lb) return;
+  lb.innerHTML = '<div class="leaderboard-loading">Loading…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'quizScores'));
+    const all  = snap.docs.map(d => d.data());
+    all.sort((a, b) => b.totalPoints - a.totalPoints);
+    const top10 = all.slice(0, 10);
+
+    if (!top10.length) {
+      lb.innerHTML = '<div class="leaderboard-loading">No scores yet. Be the first!</div>';
+      return;
+    }
+
+    lb.innerHTML = top10.map((entry, i) => {
+      const rank = i + 1;
+      const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const isMe = entry.phone === userProfile.phone;
+      return `
+        <div class="leaderboard-row${isMe ? ' me' : ''}">
+          <div class="leaderboard-rank ${rankClass}">${rank}</div>
+          <div class="leaderboard-info">
+            <div class="leaderboard-name">${entry.name}${isMe ? ' (You)' : ''}</div>
+            <div class="leaderboard-flat">Flat ${entry.flat || '—'}</div>
+          </div>
+          <div>
+            <div class="leaderboard-points">${entry.totalPoints}</div>
+            <div class="leaderboard-correct">${entry.correctAnswers || 0} correct</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    lb.innerHTML = '<div class="leaderboard-loading">Could not load leaderboard.</div>';
+  }
+}
+
 // ── Expose functions to HTML onclick handlers ──
 window.saveProfile          = saveProfile;
 window.submitRegistration   = submitRegistration;
@@ -1920,3 +2430,5 @@ window.postAnnouncement        = postAnnouncement;
 window.clearAnnouncement       = clearAnnouncement;
 window.exportCSV               = exportCSV;
 window.filterAllRegs           = filterAllRegs;
+window.selectQuizOption        = selectQuizOption;
+window.submitQuizAnswerWrap    = submitQuizAnswerWrap;
