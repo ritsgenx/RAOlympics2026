@@ -370,6 +370,7 @@ function isAdmin() {
 // ── App state ──
 let currentSport       = null;
 let currentSubcategory = null;
+let currentAgeCategory = null;
 let userProfile        = null;
 let blockChart         = null;
 let deleteTargetId     = null;
@@ -751,6 +752,26 @@ async function openSportDetails(sport) {
 }
 
 // ── Registration form ──
+function selectAgeCategory(category) {
+  currentAgeCategory = category;
+
+  const pillAdult   = document.getElementById('pill-adult');
+  const pillUnder   = document.getElementById('pill-under18');
+  const gradeSection = document.getElementById('grade-section');
+
+  pillAdult.classList.remove('selected');
+  pillUnder.classList.remove('selected');
+
+  if (category === '18+') {
+    pillAdult.classList.add('selected');
+    gradeSection.style.display = 'none';
+    document.getElementById('f-grade').value = '';
+  } else {
+    pillUnder.classList.add('selected');
+    gradeSection.style.display = 'block';
+  }
+}
+
 function openRegistrationForm(sport) {
   currentSport = sport;
 
@@ -762,12 +783,21 @@ function openRegistrationForm(sport) {
   document.getElementById('form-flat-display').textContent  = `Flat ${userProfile.flat}`;
 
   document.getElementById('f-name').value         = '';
-  document.getElementById('f-age').value           = '';
   document.getElementById('f-partner-name').value  = '';
   document.getElementById('f-partner-phone').value = '';
   document.getElementById('f-partner-flat').value  = '';
   document.querySelectorAll('input[name="regtype"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="gender"]').forEach(r => r.checked = false);
+
+  currentAgeCategory = null;
+  const pillAdult   = document.getElementById('pill-adult');
+  const pillUnder   = document.getElementById('pill-under18');
+  if (pillAdult) pillAdult.classList.remove('selected');
+  if (pillUnder) pillUnder.classList.remove('selected');
+  const gradeSection = document.getElementById('grade-section');
+  if (gradeSection) gradeSection.style.display = 'none';
+  const gradeSelect = document.getElementById('f-grade');
+  if (gradeSelect) gradeSelect.value = '';
 
   const needsPartner = currentSubcategory === 'Doubles' || currentSubcategory === 'Mixed Doubles';
   document.getElementById('partner-section').style.display = needsPartner ? 'block' : 'none';
@@ -776,15 +806,17 @@ function openRegistrationForm(sport) {
 }
 
 async function submitRegistration() {
-  const name    = document.getElementById('f-name').value.trim();
-  const age     = document.getElementById('f-age').value.trim();
-  const gender  = document.querySelector('input[name="gender"]:checked')?.value;
-  const regtype = document.querySelector('input[name="regtype"]:checked')?.value;
+  const name        = document.getElementById('f-name').value.trim();
+  const ageCategory = currentAgeCategory;
+  const grade       = document.getElementById('f-grade').value;
+  const gender      = document.querySelector('input[name="gender"]:checked')?.value;
+  const regtype     = document.querySelector('input[name="regtype"]:checked')?.value;
 
-  if (!name)    return showToast('Please enter participant name', true);
-  if (!age)     return showToast('Please enter age', true);
-  if (!gender)  return showToast('Please select gender', true);
-  if (!regtype) return showToast('Please select registrant type', true);
+  if (!name)        return showToast('Please enter participant name', true);
+  if (!ageCategory) return showToast('Please select age category', true);
+  if (ageCategory === 'Under 18' && !grade) return showToast('Please select grade', true);
+  if (!gender)      return showToast('Please select gender', true);
+  if (!regtype)     return showToast('Please select registrant type', true);
 
   // Partner fields (only when section is visible)
   const partnerVisible = document.getElementById('partner-section').style.display !== 'none';
@@ -806,7 +838,8 @@ async function submitRegistration() {
       sportEmoji:   currentSport.emoji,
       subcategory:  currentSubcategory || null,
       name,
-      age:          parseInt(age),
+      ageCategory,
+      grade:        ageCategory === 'Under 18' ? grade : null,
       gender,
       regtype,
       phone:        userProfile.phone,
@@ -864,7 +897,8 @@ async function loadRegistrations() {
           <div class="reg-card-sport">${sportLabel}</div>
           <div class="reg-card-details">
             <span class="reg-tag">${d.name}</span>
-            <span class="reg-tag">Age ${d.age}</span>
+            <span class="reg-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '')}</span>
+            ${d.grade ? `<span class="reg-tag">${d.grade}</span>` : ''}
             <span class="reg-tag">${d.gender}</span>
             <span class="reg-tag ${cls}">${d.regtype}</span>
             <span class="reg-tag">Flat ${d.flat}</span>
@@ -1167,7 +1201,8 @@ async function openPicSportDetail(sportName) {
       <div class="reg-detail-card">
         <div class="reg-detail-name">${d.name || '—'}</div>
         <div class="reg-detail-tags">
-          <span class="reg-detail-tag">Age ${d.age || '—'}</span>
+          <span class="reg-detail-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '—')}</span>
+          ${d.grade ? `<span class="reg-detail-tag">${d.grade}</span>` : ''}
           <span class="reg-detail-tag">${d.gender || '—'}</span>
           <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
           <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
@@ -1545,11 +1580,11 @@ async function exportCSV(sportFilter) {
 
     if (snap.empty) { showToast('No registrations found', true); return; }
 
-    const headers = ['Sport','Name','Age','Gender','Registrant Type','Phone','Flat',
+    const headers = ['Sport','Name','Age Category','Grade','Gender','Registrant Type','Phone','Flat',
                      'Subcategory','Partner Name','Partner Phone','Partner Flat','Registered At'];
     const rows = snap.docs.map(d => {
       const r = d.data();
-      return [r.sport, r.name, r.age, r.gender, r.regtype, r.phone, r.flat,
+      return [r.sport, r.name, r.ageCategory || '', r.grade || '', r.gender, r.regtype, r.phone, r.flat,
               r.subcategory || '', r.partnerName || '', r.partnerPhone || '',
               r.partnerFlat || '', formatTimestamp(r.registeredAt)].map(escapeCsvVal);
     });
@@ -1632,7 +1667,7 @@ function renderAllRegs(regs) {
         <div class="reg-detail-card">
           <div class="reg-detail-name">${d.name || '—'}</div>
           <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
-            Age ${d.age || '—'} · ${d.gender || '—'} · ${d.regtype || '—'}
+            ${d.ageCategory || (d.age ? 'Age ' + d.age : '')}${d.grade ? ' · ' + d.grade : ''} · ${d.gender || '—'} · ${d.regtype || '—'}
           </div>
           <div class="reg-detail-tags">
             <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
@@ -1862,6 +1897,7 @@ function resetProfile() {
 // ── Expose functions to HTML onclick handlers ──
 window.saveProfile          = saveProfile;
 window.submitRegistration   = submitRegistration;
+window.selectAgeCategory    = selectAgeCategory;
 window.showScreen           = showScreen;
 window.switchTab            = switchTab;
 window.openRegistrationForm = openRegistrationForm;

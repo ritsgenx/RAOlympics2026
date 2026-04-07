@@ -1903,3 +1903,105 @@ textarea.edit-field-input {
 }
 .footer-wa-link:hover { text-decoration: underline; }
 
+/* ── AGE CATEGORY TOGGLE PILLS ── */
+.age-toggle-row {
+  display: flex;
+  gap: 10px;
+}
+
+.age-toggle-pill {
+  flex: 1;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  font-size: 14px;
+  font-family: var(--font);
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.age-toggle-pill:hover {
+  border-color: var(--border2);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* 18+ selected — amber gold */
+#pill-adult.selected {
+  background: rgba(240,165,0,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Under 18 selected — purple blue */
+#pill-under18.selected {
+  background: rgba(83,74,183,0.12);
+  border-color: #534AB7;
+  color: #89b4fa;
+}
+
+/* Grade hint text */
+.grade-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text3);
+  margin-left: 4px;
+}
+
+/* Grade note below dropdown */
+.grade-note {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(83,74,183,0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(83,74,183,0.15);
+  line-height: 1.5;
+}
+
+/* Grade select dropdown — dark themed */
+#f-grade {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 13px 16px;
+  font-size: 15px;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a09d98' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
+#f-grade:focus {
+  border-color: #534AB7;
+  box-shadow: 0 0 0 3px rgba(83,74,183,0.15);
+}
+
+#f-grade optgroup {
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#f-grade option {
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 14px;
+}
+
