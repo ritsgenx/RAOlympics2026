@@ -1901,7 +1901,15 @@ textarea.edit-field-input {
   font-weight: 600;
   pointer-events: all;
 }
-.footer-wa-link:hover { text-decoration: underline; }
+.footer-wa-link:hover { opacity: 0.8; }
+
+.made-with-love {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.6;
+  padding: 16px 20px 80px;
+}
 
 /* ── QUIZ SCREEN ── */
 .quiz-header {
