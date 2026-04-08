@@ -1409,13 +1409,15 @@ function renderPicSection(container, sports, allDocs) {
   const wrap = document.createElement('div');
   wrap.innerHTML = '<div class="admin-section-title teal">🟢 List of Sports I am Coordinating</div>';
   sports.forEach(sportName => {
-    const sportObj = SPORTS.find(s => s.name === sportName);
-    const emoji    = sportObj ? sportObj.emoji : '🏆';
+    const sportObj  = SPORTS.find(s => s.name === sportName);
+    const iconHTML  = sportObj && sportObj.image
+      ? `<img src="${sportObj.image}" style="width:32px;height:32px;object-fit:contain" alt="${sportName}">`
+      : (sportObj ? sportObj.emoji : '🏆');
     const count    = allDocs.filter(d => d.sport === sportName).length;
     const btn      = document.createElement('button');
     btn.className  = 'pic-sport-btn';
     btn.innerHTML  = `
-      <span class="pic-sport-btn-emoji">${emoji}</span>
+      <span class="pic-sport-btn-emoji">${iconHTML}</span>
       <div class="pic-sport-btn-info">
         <div class="pic-sport-btn-title">List of participants for ${sportName}</div>
         <div class="pic-sport-btn-count">${count} registration${count !== 1 ? 's' : ''}</div>
@@ -1429,10 +1431,12 @@ function renderPicSection(container, sports, allDocs) {
 
 // ── PIC sport detail screen ──
 async function openPicSportDetail(sportName) {
-  const sportObj = SPORTS.find(s => s.name === sportName);
-  const emoji    = sportObj ? sportObj.emoji : '🏆';
+  const sportObj      = SPORTS.find(s => s.name === sportName);
+  const headerIconHTML = sportObj && sportObj.image
+    ? `<img src="${sportObj.image}" style="width:28px;height:28px;object-fit:contain;vertical-align:middle" alt="${sportName}">`
+    : (sportObj ? sportObj.emoji : '🏆');
 
-  document.getElementById('pic-sport-icon').textContent        = emoji;
+  document.getElementById('pic-sport-icon').innerHTML         = headerIconHTML;
   document.getElementById('pic-sport-screen-name').textContent = sportName;
 
   showScreen('screen-pic-sport');
@@ -1487,9 +1491,12 @@ function renderAdminDataSection(container, allDocs) {
     if (!count) return;
     hasData   = true;
     const btn = document.createElement('button');
+    const adminIconHTML = sportObj.image
+      ? `<img src="${sportObj.image}" style="width:32px;height:32px;object-fit:contain" alt="${sportObj.name}">`
+      : sportObj.emoji;
     btn.className = 'pic-sport-btn admin-sport-btn';
     btn.innerHTML = `
-      <span class="pic-sport-btn-emoji">${sportObj.emoji}</span>
+      <span class="pic-sport-btn-emoji">${adminIconHTML}</span>
       <div class="pic-sport-btn-info">
         <div class="pic-sport-btn-title">List of participants for ${sportObj.name}</div>
         <div class="pic-sport-btn-count admin-count">${count} registration${count !== 1 ? 's' : ''}</div>
