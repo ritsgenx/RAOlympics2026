@@ -652,11 +652,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadProfile();
 
   // Strip non-digits from flat number inputs as the user types
-  ['p-flat', 'f-partner-flat'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => {
-      el.value = el.value.replace(/\D/g, '').slice(0, 4);
-    });
+  const pFlatEl = document.getElementById('p-flat');
+  if (pFlatEl) pFlatEl.addEventListener('input', () => {
+    pFlatEl.value = pFlatEl.value.replace(/\D/g, '').slice(0, 4);
   });
 });
 
@@ -1048,7 +1046,9 @@ function openRegistrationForm(sport) {
   document.getElementById('f-name').value         = '';
   document.getElementById('f-partner-name').value  = '';
   document.getElementById('f-partner-phone').value = '';
-  document.getElementById('f-partner-flat').value  = '';
+  document.querySelectorAll('input[name="partner-block"]').forEach(r => r.checked = false);
+  const pfn = document.getElementById('f-partner-flat-num');
+  if (pfn) pfn.value = '';
   document.querySelectorAll('input[name="regtype"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="gender"]').forEach(r => r.checked = false);
 
@@ -1083,41 +1083,93 @@ async function submitRegistration() {
 
   // Partner fields (only when section is visible)
   const partnerVisible = document.getElementById('partner-section').style.display !== 'none';
-  let partnerName = null, partnerPhone = null, partnerFlat = null;
+  let partnerName = null, partnerPhone = null, partnerBlock = null, partnerFlatNum = null, partnerFlatFull = null;
   if (partnerVisible) {
-    partnerName  = document.getElementById('f-partner-name').value.trim();
-    partnerPhone = document.getElementById('f-partner-phone').value.trim();
-    partnerFlat  = document.getElementById('f-partner-flat').value.trim();
-    if (!partnerName)                      return showToast('Please enter partner name', true);
-    if (partnerPhone.length < 10)          return showToast("Please enter partner's 10-digit phone", true);
-    if (!partnerFlat)                      return showToast('Please enter partner flat number', true);
-    if (!/^\d{1,4}$/.test(partnerFlat))    return showToast('Partner flat must be digits only (max 4)', true);
+    partnerName    = document.getElementById('f-partner-name').value.trim();
+    partnerPhone   = document.getElementById('f-partner-phone').value.trim();
+    partnerBlock   = document.querySelector('input[name="partner-block"]:checked')?.value || null;
+    partnerFlatNum = document.getElementById('f-partner-flat-num')?.value?.trim() || null;
+    if (!partnerName)                       return showToast('Please enter partner name', true);
+    if (!partnerPhone || partnerPhone.length < 10) return showToast("Please enter partner's 10-digit phone", true);
+    if (!partnerBlock)                      return showToast('Please select partner block', true);
+    if (!partnerFlatNum)                    return showToast('Please enter partner flat number', true);
+    if (String(partnerFlatNum).length > 4)  return showToast('Flat number must be 4 digits or less', true);
+    partnerFlatFull = `Block ${partnerBlock}, Flat ${partnerFlatNum}`;
   }
 
   showLoading(true);
   try {
+    // Duplicate partner check (non-blocking)
+    if (partnerVisible && partnerPhone) {
+      const partnerCheckSnap = await getDocs(query(
+        collection(db, 'registrations'),
+        where('phone', '==', partnerPhone),
+        where('sport', '==', currentSport.name),
+        where('isPartnerEntry', '==', false)
+      ));
+      if (!partnerCheckSnap.empty) {
+        showLoading(false);
+        showToast(`⚠️ ${partnerName} is already registered for ${currentSport.name}! Proceeding anyway…`, false);
+        await new Promise(r => setTimeout(r, 2000));
+        showLoading(true);
+      }
+    }
+
+    // Primary registrant document
     await addDoc(collection(db, 'registrations'), {
-      sport:        currentSport.name,
-      sportEmoji:   currentSport.emoji,
-      subcategory:  currentSubcategory || null,
+      sport:         currentSport.name,
+      sportEmoji:    currentSport.emoji,
+      subcategory:   currentSubcategory || null,
       name,
       ageCategory,
-      grade:        ageCategory === 'Under 18' ? grade : null,
+      grade:         ageCategory === 'Under 18' ? grade : null,
       gender,
       regtype,
-      phone:        userProfile.phone,
-      flat:         userProfile.flat,
-      registeredBy: userProfile.name,
-      partnerName,
-      partnerPhone,
-      partnerFlat,
-      registeredAt: serverTimestamp()
+      phone:         userProfile.phone,
+      flat:          userProfile.flat,
+      registeredBy:  userProfile.name,
+      isPartnerEntry: false,
+      partnerName:   partnerName   || null,
+      partnerPhone:  partnerPhone  || null,
+      partnerBlock:  partnerBlock  || null,
+      partnerFlatNum: partnerFlatNum || null,
+      partnerFlat:   partnerFlatFull || null,
+      registeredAt:  serverTimestamp()
     });
+
+    // Partner auto-registration document
+    if (partnerName && partnerPhone && partnerBlock && partnerFlatNum) {
+      const myBlock = userProfile.flat.split('-')[0] || null;
+      await addDoc(collection(db, 'registrations'), {
+        sport:         currentSport.name,
+        sportEmoji:    currentSport.emoji,
+        subcategory:   currentSubcategory || null,
+        name:          partnerName,
+        gender:        null,
+        ageCategory:   null,
+        grade:         null,
+        regtype:       'Partner',
+        phone:         partnerPhone,
+        flat:          partnerFlatFull,
+        block:         partnerBlock,
+        registeredBy:  userProfile.name,
+        isPartnerEntry: true,
+        partnerOf:     userProfile.phone,
+        partnerOfName: userProfile.name,
+        partnerName:   name,
+        partnerPhone:  userProfile.phone,
+        partnerBlock:  myBlock,
+        partnerFlat:   userProfile.flat,
+        registeredAt:  serverTimestamp()
+      });
+    }
+
     const sportLabel = currentSubcategory
       ? `${currentSport.name} (${currentSubcategory})`
       : currentSport.name;
-    document.getElementById('success-msg').textContent =
-      `${name} is registered for ${sportLabel}! See you at the event.`;
+    document.getElementById('success-msg').textContent = (partnerName && partnerPhone)
+      ? `${name} and ${partnerName} are both registered for ${sportLabel}! See you at the event.`
+      : `${name} is registered for ${sportLabel}! See you at the event.`;
     updateMyListBadge();
     showScreen('screen-success');
   } catch (err) {
@@ -1151,20 +1203,26 @@ async function loadRegistrations() {
     list.innerHTML = '';
     docs.forEach(d => {
       const card = document.createElement('div');
-      card.className = 'reg-card';
-      const cls        = d.regtype === 'Self' ? 'self' : d.regtype === 'Kid' ? 'kid' : '';
+      card.className = 'reg-card' + (d.isPartnerEntry ? ' partner-entry-card' : '');
+      const cls        = d.regtype === 'Self' ? 'self' : d.regtype === 'Kid' ? 'kid' : d.regtype === 'Partner' ? 'partner' : '';
       const sportLabel = d.subcategory ? `${d.sport} — ${d.subcategory}` : d.sport;
+      const partnerTag = d.isPartnerEntry
+        ? `<span class="reg-tag partner-entry">👥 Added as partner by ${d.partnerOfName || 'someone'}</span>`
+        : (d.partnerName
+          ? `<span class="reg-tag">Partner: ${d.partnerName} · Blk ${d.partnerBlock || ''} Flat ${d.partnerFlatNum || d.partnerFlat || ''}</span>`
+          : '');
       card.innerHTML = `
         <div class="reg-card-icon">${d.sportEmoji || '🏆'}</div>
         <div class="reg-card-info">
           <div class="reg-card-sport">${sportLabel}</div>
           <div class="reg-card-details">
             <span class="reg-tag">${d.name}</span>
-            <span class="reg-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '')}</span>
+            ${d.ageCategory ? `<span class="reg-tag">${d.ageCategory}</span>` : (d.age ? `<span class="reg-tag">Age ${d.age}</span>` : '')}
             ${d.grade ? `<span class="reg-tag">${d.grade}</span>` : ''}
-            <span class="reg-tag">${d.gender}</span>
+            ${d.gender ? `<span class="reg-tag">${d.gender}</span>` : ''}
             <span class="reg-tag ${cls}">${d.regtype}</span>
             <span class="reg-tag">Flat ${d.flat}</span>
+            ${partnerTag}
           </div>
         </div>
         <button class="reg-delete-btn" title="Delete registration">🗑️</button>
@@ -1218,7 +1276,9 @@ async function loadBlockGraph() {
       SPORTS.forEach(s => tally[b][s.name] = 0);
     });
     docs.forEach(d => {
-      const block = d.flat?.split('-')[0];
+      // Support both "B-1104" (primary) and explicit block field (partner auto-reg)
+      const raw   = d.block || d.flat?.split('-')[0] || '';
+      const block = raw.length === 1 ? raw : (d.flat?.match(/Block\s+([A-E])/i)?.[1] || '');
       if (BLOCKS.includes(block) && tally[block][d.sport] !== undefined) {
         tally[block][d.sport]++;
       }
@@ -1514,12 +1574,14 @@ function renderParticipantCards(list) {
     return;
   }
   listEl.innerHTML = list.map(d => `
-    <div class="reg-detail-card">
-      <div class="reg-detail-name">${d.name || '—'}</div>
+    <div class="reg-detail-card${d.isPartnerEntry ? ' partner-entry-card' : ''}">
+      <div class="reg-detail-name">${d.name || '—'}${d.isPartnerEntry ? ' <span class="reg-detail-tag partner-entry" style="font-size:10px;vertical-align:middle">👥 Partner Entry</span>' : ''}</div>
       <div class="reg-detail-tags">
-        <span class="reg-detail-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '—')}</span>
-        ${d.grade ? `<span class="reg-detail-tag">${d.grade}</span>` : ''}
-        <span class="reg-detail-tag">${d.gender || '—'}</span>
+        ${d.isPartnerEntry
+          ? `<span class="reg-detail-tag partner-entry">Added by ${d.partnerOfName || '—'}</span>`
+          : `<span class="reg-detail-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '—')}</span>`}
+        ${!d.isPartnerEntry && d.grade ? `<span class="reg-detail-tag">${d.grade}</span>` : ''}
+        ${d.gender ? `<span class="reg-detail-tag">${d.gender}</span>` : ''}
         <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
         <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
         ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
@@ -1896,12 +1958,13 @@ async function exportCSV(sportFilter) {
     if (snap.empty) { showToast('No registrations found', true); return; }
 
     const headers = ['Sport','Name','Age Category','Grade','Gender','Registrant Type','Phone','Flat',
-                     'Subcategory','Partner Name','Partner Phone','Partner Flat','Registered At'];
+                     'Subcategory','Partner Name','Partner Phone','Partner Block','Partner Flat No','Registered At'];
     const rows = snap.docs.map(d => {
       const r = d.data();
       return [r.sport, r.name, r.ageCategory || '', r.grade || '', r.gender, r.regtype, r.phone, r.flat,
               r.subcategory || '', r.partnerName || '', r.partnerPhone || '',
-              r.partnerFlat || '', formatTimestamp(r.registeredAt)].map(escapeCsvVal);
+              r.partnerBlock || '', r.partnerFlatNum || r.partnerFlat || '',
+              formatTimestamp(r.registeredAt)].map(escapeCsvVal);
     });
 
     const csv   = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -2364,7 +2427,7 @@ function downloadParticipants(format, scope) {
 }
 
 function downloadCSV(data, filename) {
-  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Flat'];
+  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Block','Partner Flat No'];
   const esc = val => {
     if (!val && val !== 0) return '';
     const s = String(val);
@@ -2373,7 +2436,8 @@ function downloadCSV(data, filename) {
   const rows = data.map(p => [
     esc(p.name), esc(p.gender), esc(p.ageCategory || ''), esc(p.grade || ''),
     esc(p.subcategory || ''), esc(p.regtype || ''), esc(p.flat),
-    esc(p.phone), esc(p.partnerName || ''), esc(p.partnerPhone || ''), esc(p.partnerFlat || '')
+    esc(p.phone), esc(p.partnerName || ''), esc(p.partnerPhone || ''),
+    esc(p.partnerBlock || ''), esc(p.partnerFlatNum || p.partnerFlat || '')
   ].join(','));
   triggerDownload([headers.join(','), ...rows].join('\n'), filename + '.csv', 'text/csv');
   showToast(`Downloading ${data.length} records as CSV`);
@@ -2396,7 +2460,10 @@ function downloadTXT(data, filename, sport, date) {
     if (p.regtype)     lines.push(`   Type: ${p.regtype}`);
     if (p.partnerName) {
       lines.push(`   Partner: ${p.partnerName}`);
-      lines.push(`   Partner Flat: ${p.partnerFlat || '-'}`);
+      const pFlat = p.partnerBlock && p.partnerFlatNum
+        ? `Block ${p.partnerBlock}, Flat ${p.partnerFlatNum}`
+        : (p.partnerFlat || '-');
+      lines.push(`   Partner Flat: ${pFlat}`);
     }
     lines.push('');
   });
@@ -2416,7 +2483,7 @@ function downloadPDF(data, filename, sport, date) {
       <td>${p.subcategory || '-'}</td>
       <td>${p.regtype || ''}</td>
       <td>${p.flat || ''}</td>
-      <td>${p.partnerName ? p.partnerName + '<br/><small>' + (p.partnerFlat || '') + '</small>' : '-'}</td>
+      <td>${p.partnerName ? p.partnerName + '<br/><small>' + (p.partnerBlock ? 'Blk ' + p.partnerBlock + ' · ' : '') + (p.partnerFlatNum || p.partnerFlat || '') + '</small>' : '-'}</td>
     </tr>`).join('');
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>

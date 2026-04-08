@@ -504,8 +504,53 @@ html, body {
   font-size: 11px;
   color: var(--text2);
 }
-.reg-tag.self { background: rgba(46,204,138,0.12); color: var(--green); }
-.reg-tag.kid  { background: rgba(255,106,0,0.12); color: var(--orange-light); }
+.reg-tag.self         { background: rgba(46,204,138,0.12); color: var(--green); }
+.reg-tag.kid          { background: rgba(255,106,0,0.12); color: var(--orange-light); }
+.reg-tag.partner      { background: rgba(83,74,183,0.12); color: #a78bfa; }
+.reg-tag.partner-entry {
+  background: rgba(83,74,183,0.12);
+  border: 1px solid rgba(83,74,183,0.25);
+  color: #89b4fa;
+  font-size: 11px;
+}
+.reg-card.partner-entry-card,
+.reg-detail-card.partner-entry-card {
+  border-left: 3px solid rgba(83,74,183,0.5);
+}
+.flat-hint {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 6px;
+  font-style: italic;
+}
+#f-partner-flat-num {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 13px 16px;
+  font-size: 18px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text);
+  outline: none;
+  text-align: center;
+  letter-spacing: 0.1em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -moz-appearance: textfield;
+}
+#f-partner-flat-num::-webkit-outer-spin-button,
+#f-partner-flat-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#f-partner-flat-num:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,128,255,0.15);
+}
+#f-partner-flat-num::placeholder {
+  color: var(--text3);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
 
 .empty-state {
   text-align: center;

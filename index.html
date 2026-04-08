@@ -246,8 +246,19 @@
             <input type="tel" id="f-partner-phone" placeholder="e.g. 9876543210" maxlength="10"/>
           </div>
           <div class="form-group">
-            <label>Partner Block &amp; Flat</label>
-            <input type="text" id="f-partner-flat" placeholder="e.g. 1104" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off"/>
+            <label>Partner Block</label>
+            <div class="block-radio-row" id="partner-block-row">
+              <label class="block-radio-opt"><input type="radio" name="partner-block" value="A"/> A</label>
+              <label class="block-radio-opt"><input type="radio" name="partner-block" value="B"/> B</label>
+              <label class="block-radio-opt"><input type="radio" name="partner-block" value="C"/> C</label>
+              <label class="block-radio-opt"><input type="radio" name="partner-block" value="D"/> D</label>
+              <label class="block-radio-opt"><input type="radio" name="partner-block" value="E"/> E</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Partner Flat Number</label>
+            <input type="number" id="f-partner-flat-num" placeholder="e.g. 1104" min="1" max="9999"/>
+            <div class="flat-hint">Enter flat number only (e.g. 1104, 304, 201)</div>
           </div>
         </div>
         <div class="phone-display">
