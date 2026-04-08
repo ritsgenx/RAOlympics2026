@@ -402,7 +402,74 @@
       </div>
     </div>
     <div class="screen-inner">
+
+      <!-- Stats row -->
+      <div class="pic-stats-row" id="pic-stats-row" style="display:none;">
+        <div class="pic-stat-card">
+          <div class="pic-stat-val" id="stat-showing">0</div>
+          <div class="pic-stat-lbl">Showing</div>
+        </div>
+        <div class="pic-stat-card">
+          <div class="pic-stat-val" id="stat-male">0</div>
+          <div class="pic-stat-lbl">Male</div>
+        </div>
+        <div class="pic-stat-card">
+          <div class="pic-stat-val" id="stat-female">0</div>
+          <div class="pic-stat-lbl">Female</div>
+        </div>
+        <div class="pic-stat-card">
+          <div class="pic-stat-val" id="pic-stat-total">0</div>
+          <div class="pic-stat-lbl">Total</div>
+        </div>
+      </div>
+
+      <!-- Filter toggle button -->
+      <div class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()" style="display:none;">
+        <span class="filter-toggle-icon">⚙️</span>
+        <span class="filter-toggle-text">Filter Participants</span>
+        <span class="filter-toggle-arrow" id="filter-toggle-arrow">▼</span>
+      </div>
+
+      <!-- Filter panel (collapsed by default) -->
+      <div class="filter-panel" id="filter-panel" style="display:none;">
+        <div class="filter-group">
+          <div class="filter-group-label">Gender</div>
+          <div class="filter-chips-row">
+            <button class="filter-chip" id="fc-male" onclick="toggleFilter('gender','Male')">Male</button>
+            <button class="filter-chip" id="fc-female" onclick="toggleFilter('gender','Female')">Female</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-group-label">Age Category</div>
+          <div class="filter-chips-row">
+            <button class="filter-chip" id="fc-adult" onclick="toggleFilter('ageCategory','18+')">18+</button>
+            <button class="filter-chip" id="fc-under18" onclick="toggleFilter('ageCategory','Under 18')">Under 18</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-group-label">Grade (Under 18 only)</div>
+          <div class="filter-chips-row" id="grade-chips-row"></div>
+        </div>
+        <div class="filter-group" id="subcategory-filter-group" style="display:none;">
+          <div class="filter-group-label">Subcategory</div>
+          <div class="filter-chips-row">
+            <button class="filter-chip" id="fc-singles" onclick="toggleFilter('subcategory','Singles')">Singles</button>
+            <button class="filter-chip" id="fc-doubles" onclick="toggleFilter('subcategory','Doubles')">Doubles</button>
+            <button class="filter-chip" id="fc-mixed" onclick="toggleFilter('subcategory','Mixed Doubles')">Mixed Doubles</button>
+          </div>
+        </div>
+        <button class="clear-filters-btn" onclick="clearAllFilters()">✕ Clear all filters</button>
+      </div>
+
+      <!-- Active filter summary -->
+      <div class="active-filter-summary" id="active-filter-summary" style="display:none;"></div>
+
+      <!-- Download buttons -->
+      <div class="download-section" id="download-section"></div>
+
+      <!-- Participant cards -->
       <div id="pic-sport-list"></div>
+
     </div>
   </div>
 

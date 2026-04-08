@@ -626,6 +626,15 @@ let _quizSelectedAnswer  = null;
 let _quizCurrentQuestion = null;
 let _quizCurrentIndex    = null;
 
+// ── PIC participant filter state ──
+let allParticipants      = [];
+let filteredParticipants = [];
+let currentPICSport      = null;
+let activeFilters        = {
+  gender: null, ageCategory: null,
+  grade: null,  subcategory: null
+};
+
 // ── Subcategory icon map ──
 const SUBCATEGORY_ICONS = {
   'Singles':       { emoji: '👤', desc: 'Play solo' },
@@ -1444,6 +1453,12 @@ async function openPicSportDetail(sportName) {
   const listEl = document.getElementById('pic-sport-list');
   listEl.innerHTML = '<div class="empty-state">Loading…</div>';
 
+  // Reset filter state for new sport
+  currentPICSport      = sportName;
+  allParticipants      = [];
+  filteredParticipants = [];
+  activeFilters        = { gender: null, ageCategory: null, grade: null, subcategory: null };
+
   showLoading(true);
   try {
     const snap = await getDocs(
@@ -1455,25 +1470,62 @@ async function openPicSportDetail(sportName) {
       listEl.innerHTML = '<div class="empty-state">No registrations yet for this sport.</div>';
       return;
     }
-    listEl.innerHTML = regs.map(d => `
-      <div class="reg-detail-card">
-        <div class="reg-detail-name">${d.name || '—'}</div>
-        <div class="reg-detail-tags">
-          <span class="reg-detail-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '—')}</span>
-          ${d.grade ? `<span class="reg-detail-tag">${d.grade}</span>` : ''}
-          <span class="reg-detail-tag">${d.gender || '—'}</span>
-          <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
-          <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
-          ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
-          ${d.regtype    ? `<span class="reg-detail-tag">${d.regtype}</span>`    : ''}
-        </div>
-      </div>`).join('');
+
+    allParticipants      = regs;
+    filteredParticipants = regs;
+
+    // Show/hide subcategory filter group
+    const hasSubcats = regs.some(p => p.subcategory);
+    const subcatGroup = document.getElementById('subcategory-filter-group');
+    if (subcatGroup) subcatGroup.style.display = hasSubcats ? 'block' : 'none';
+
+    // Show stats row + filter toggle
+    const statsRow = document.getElementById('pic-stats-row');
+    const filterBtn = document.getElementById('filter-toggle-btn');
+    if (statsRow)  statsRow.style.display  = 'grid';
+    if (filterBtn) filterBtn.style.display = 'flex';
+
+    // Reset filter panel to closed
+    const filterPanel = document.getElementById('filter-panel');
+    const filterArrow = document.getElementById('filter-toggle-arrow');
+    if (filterPanel) filterPanel.style.display = 'none';
+    if (filterArrow) filterArrow.textContent   = '▼';
+
+    buildGradeChips();
+    updateFilterChipStyles();
+    updateStats(allParticipants);
+    renderDownloadButtons();
+    updateActiveFilterSummary();
+    renderParticipantCards(allParticipants);
+
   } catch (err) {
     console.error(err);
     listEl.innerHTML = '<div class="empty-state">Could not load data. Try again.</div>';
   } finally {
     showLoading(false);
   }
+}
+
+function renderParticipantCards(list) {
+  const listEl = document.getElementById('pic-sport-list');
+  if (!listEl) return;
+  if (!list.length) {
+    listEl.innerHTML = '<div class="empty-state">No participants match the current filters.</div>';
+    return;
+  }
+  listEl.innerHTML = list.map(d => `
+    <div class="reg-detail-card">
+      <div class="reg-detail-name">${d.name || '—'}</div>
+      <div class="reg-detail-tags">
+        <span class="reg-detail-tag">${d.ageCategory || (d.age ? 'Age ' + d.age : '—')}</span>
+        ${d.grade ? `<span class="reg-detail-tag">${d.grade}</span>` : ''}
+        <span class="reg-detail-tag">${d.gender || '—'}</span>
+        <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
+        <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
+        ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
+        ${d.regtype     ? `<span class="reg-detail-tag">${d.regtype}</span>`     : ''}
+      </div>
+    </div>`).join('');
 }
 
 // ── Admin full data section — sport selection buttons ──
@@ -2157,6 +2209,263 @@ function resetProfile() {
   }
 }
 
+// ── PIC PARTICIPANT FILTER & DOWNLOAD FUNCTIONS ──
+
+function toggleFilterPanel() {
+  const panel = document.getElementById('filter-panel');
+  const arrow = document.getElementById('filter-toggle-arrow');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent   = isOpen ? '▼' : '▲';
+}
+
+function toggleFilter(filterType, value) {
+  activeFilters[filterType] = activeFilters[filterType] === value ? null : value;
+  if (filterType === 'ageCategory' && value !== 'Under 18') {
+    activeFilters.grade = null;
+  }
+  applyFilters();
+  updateFilterChipStyles();
+  updateActiveFilterSummary();
+  renderDownloadButtons();
+}
+
+function clearAllFilters() {
+  activeFilters = { gender: null, ageCategory: null, grade: null, subcategory: null };
+  applyFilters();
+  updateFilterChipStyles();
+  updateActiveFilterSummary();
+  renderDownloadButtons();
+}
+
+function applyFilters() {
+  filteredParticipants = allParticipants.filter(p => {
+    if (activeFilters.gender      && p.gender      !== activeFilters.gender)      return false;
+    if (activeFilters.ageCategory && p.ageCategory !== activeFilters.ageCategory) return false;
+    if (activeFilters.grade       && p.grade       !== activeFilters.grade)       return false;
+    if (activeFilters.subcategory && p.subcategory !== activeFilters.subcategory) return false;
+    return true;
+  });
+  renderParticipantCards(filteredParticipants);
+  updateStats(filteredParticipants);
+}
+
+function updateStats(participants) {
+  const male   = participants.filter(p => p.gender === 'Male').length;
+  const female = participants.filter(p => p.gender === 'Female').length;
+  const showEl   = document.getElementById('stat-showing');
+  const maleEl   = document.getElementById('stat-male');
+  const femaleEl = document.getElementById('stat-female');
+  const totalEl  = document.getElementById('pic-stat-total');
+  if (showEl)   showEl.textContent   = participants.length;
+  if (maleEl)   maleEl.textContent   = male;
+  if (femaleEl) femaleEl.textContent = female;
+  if (totalEl)  totalEl.textContent  = allParticipants.length;
+}
+
+function updateFilterChipStyles() {
+  const chipMap = {
+    'fc-male':    { type: 'gender',      val: 'Male'         },
+    'fc-female':  { type: 'gender',      val: 'Female'       },
+    'fc-adult':   { type: 'ageCategory', val: '18+'          },
+    'fc-under18': { type: 'ageCategory', val: 'Under 18'     },
+    'fc-singles': { type: 'subcategory', val: 'Singles'      },
+    'fc-doubles': { type: 'subcategory', val: 'Doubles'      },
+    'fc-mixed':   { type: 'subcategory', val: 'Mixed Doubles' },
+  };
+  Object.entries(chipMap).forEach(([id, f]) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', activeFilters[f.type] === f.val);
+  });
+  document.querySelectorAll('.grade-chip').forEach(chip => {
+    chip.classList.toggle('active', activeFilters.grade === chip.dataset.grade);
+  });
+}
+
+function updateActiveFilterSummary() {
+  const summary = document.getElementById('active-filter-summary');
+  if (!summary) return;
+  const active = [
+    activeFilters.gender,
+    activeFilters.ageCategory,
+    activeFilters.grade,
+    activeFilters.subcategory
+  ].filter(Boolean);
+  if (active.length === 0) {
+    summary.style.display = 'none';
+  } else {
+    summary.style.display = 'block';
+    summary.textContent   = 'Filtered by: ' + active.join(' · ');
+  }
+}
+
+function buildGradeChips() {
+  const gradeOrder = [
+    'Pre-Nursery','Nursery','KG-1','KG-2',
+    '1st Grade','2nd Grade','3rd Grade','4th Grade','5th Grade',
+    '6th Grade','7th Grade','8th Grade',
+    '9th Grade','10th Grade','11th Grade','12th Grade'
+  ];
+  const gradesInData = [...new Set(
+    allParticipants.filter(p => p.grade).map(p => p.grade)
+  )].sort((a, b) => gradeOrder.indexOf(a) - gradeOrder.indexOf(b));
+
+  const container = document.getElementById('grade-chips-row');
+  if (!container) return;
+  if (gradesInData.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text3)">No under-18 participants</span>';
+    return;
+  }
+  container.innerHTML = '';
+  gradesInData.forEach(grade => {
+    const btn = document.createElement('button');
+    btn.className      = 'filter-chip grade-chip';
+    btn.dataset.grade  = grade;
+    btn.textContent    = grade;
+    btn.onclick        = () => toggleFilter('grade', grade);
+    container.appendChild(btn);
+  });
+}
+
+function renderDownloadButtons() {
+  const container = document.getElementById('download-section');
+  if (!container) return;
+  const hasFilters = Object.values(activeFilters).some(v => v !== null);
+  const sport = currentPICSport || 'Sport';
+
+  if (!hasFilters) {
+    container.innerHTML = `
+      <div class="download-label">Download all ${allParticipants.length} participants:</div>
+      <div class="download-btn-row">
+        <button class="dl-btn dl-pdf" onclick="downloadParticipants('pdf','all')">📄 PDF</button>
+        <button class="dl-btn dl-csv" onclick="downloadParticipants('csv','all')">📊 CSV</button>
+        <button class="dl-btn dl-txt" onclick="downloadParticipants('txt','all')">📝 TXT</button>
+      </div>`;
+  } else {
+    container.innerHTML = `
+      <div class="download-label">Download filtered (${filteredParticipants.length} shown):</div>
+      <div class="download-btn-row">
+        <button class="dl-btn dl-pdf" onclick="downloadParticipants('pdf','filtered')">📄 PDF</button>
+        <button class="dl-btn dl-csv" onclick="downloadParticipants('csv','filtered')">📊 CSV</button>
+        <button class="dl-btn dl-txt" onclick="downloadParticipants('txt','filtered')">📝 TXT</button>
+      </div>
+      <div class="download-label" style="margin-top:8px;">Download complete list (${allParticipants.length} total):</div>
+      <div class="download-btn-row">
+        <button class="dl-btn dl-pdf dl-secondary" onclick="downloadParticipants('pdf','all')">📄 PDF</button>
+        <button class="dl-btn dl-csv dl-secondary" onclick="downloadParticipants('csv','all')">📊 CSV</button>
+        <button class="dl-btn dl-txt dl-secondary" onclick="downloadParticipants('txt','all')">📝 TXT</button>
+      </div>`;
+  }
+}
+
+function downloadParticipants(format, scope) {
+  const data = scope === 'filtered' ? filteredParticipants : allParticipants;
+  if (data.length === 0) { showToast('No participants to download', true); return; }
+  const dateStr = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  const filename = `${currentPICSport || 'Sport'}-participants-${scope}-${dateStr}`;
+  if (format === 'csv') downloadCSV(data, filename);
+  else if (format === 'txt') downloadTXT(data, filename, currentPICSport || 'Sport', dateStr);
+  else if (format === 'pdf') downloadPDF(data, filename, currentPICSport || 'Sport', dateStr);
+}
+
+function downloadCSV(data, filename) {
+  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Flat'];
+  const esc = val => {
+    if (!val && val !== 0) return '';
+    const s = String(val);
+    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = data.map(p => [
+    esc(p.name), esc(p.gender), esc(p.ageCategory || ''), esc(p.grade || ''),
+    esc(p.subcategory || ''), esc(p.regtype || ''), esc(p.flat),
+    esc(p.phone), esc(p.partnerName || ''), esc(p.partnerPhone || ''), esc(p.partnerFlat || '')
+  ].join(','));
+  triggerDownload([headers.join(','), ...rows].join('\n'), filename + '.csv', 'text/csv');
+  showToast(`Downloading ${data.length} records as CSV`);
+}
+
+function downloadTXT(data, filename, sport, date) {
+  const lines = [];
+  lines.push('═'.repeat(50));
+  lines.push(`  ${sport.toUpperCase()} — PARTICIPANT LIST`);
+  lines.push(`  Generated: ${date}`);
+  lines.push(`  Total: ${data.length} participants`);
+  lines.push('═'.repeat(50));
+  lines.push('');
+  data.forEach((p, i) => {
+    lines.push(`${i + 1}. ${p.name}`);
+    lines.push(`   Flat: ${p.flat || '-'}`);
+    lines.push(`   Gender: ${p.gender || '-'}`);
+    lines.push(`   Age: ${p.ageCategory || '-'}${p.grade ? ' (' + p.grade + ')' : ''}`);
+    if (p.subcategory) lines.push(`   Category: ${p.subcategory}`);
+    if (p.regtype)     lines.push(`   Type: ${p.regtype}`);
+    if (p.partnerName) {
+      lines.push(`   Partner: ${p.partnerName}`);
+      lines.push(`   Partner Flat: ${p.partnerFlat || '-'}`);
+    }
+    lines.push('');
+  });
+  lines.push('─'.repeat(50));
+  lines.push('RA Olympics 2026');
+  triggerDownload(lines.join('\n'), filename + '.txt', 'text/plain');
+  showToast(`Downloading ${data.length} records as TXT`);
+}
+
+function downloadPDF(data, filename, sport, date) {
+  const rows = data.map((p, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${p.name || ''}</strong></td>
+      <td>${p.gender || ''}</td>
+      <td>${p.ageCategory || ''}${p.grade ? '<br/><small>' + p.grade + '</small>' : ''}</td>
+      <td>${p.subcategory || '-'}</td>
+      <td>${p.regtype || ''}</td>
+      <td>${p.flat || ''}</td>
+      <td>${p.partnerName ? p.partnerName + '<br/><small>' + (p.partnerFlat || '') + '</small>' : '-'}</td>
+    </tr>`).join('');
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/>
+<title>${sport} Participants</title>
+<style>
+  body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#333}
+  h1{font-size:18px;color:#1a1a2e;margin-bottom:4px}
+  .meta{font-size:11px;color:#666;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{background:#1a1a2e;color:#fff;padding:8px 6px;text-align:left}
+  td{padding:7px 6px;border-bottom:1px solid #eee;vertical-align:top}
+  tr:nth-child(even) td{background:#f9f9f9}
+  small{color:#888;font-size:10px}
+  .footer{margin-top:20px;font-size:10px;color:#999;text-align:center}
+  @media print{body{margin:10px}}
+</style></head>
+<body>
+  <h1>🏆 ${sport} — Participant List</h1>
+  <div class="meta">Generated: ${date} &nbsp;·&nbsp; Total: ${data.length} participants &nbsp;·&nbsp; RA Olympics 2026</div>
+  <table>
+    <thead><tr><th>#</th><th>Name</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">RA Olympics 2026 · Generated by Sports Registration App</div>
+  <script>window.print();<\/script>
+</body></html>`;
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else     { showToast('Allow popups to download PDF', true); return; }
+  showToast(`Opening PDF — use "Save as PDF" in the print dialog`);
+}
+
+function triggerDownload(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── QUIZ FUNCTIONS ──
 
 async function loadQuizScreen() {
@@ -2417,3 +2726,7 @@ window.exportCSV               = exportCSV;
 window.filterAllRegs           = filterAllRegs;
 window.selectQuizOption        = selectQuizOption;
 window.submitQuizAnswerWrap    = submitQuizAnswerWrap;
+window.toggleFilterPanel       = toggleFilterPanel;
+window.toggleFilter            = toggleFilter;
+window.clearAllFilters         = clearAllFilters;
+window.downloadParticipants    = downloadParticipants;
