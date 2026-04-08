@@ -1934,7 +1934,7 @@ async function loadAllRegistrations() {
     _allRegs   = snap.docs.map(d => d.data());
     container.innerHTML = `
       <div class="form-group">
-        <input type="text" id="all-regs-search" placeholder="Search by name, phone or flat…"
+        <input type="text" id="all-regs-search" placeholder="Filter sports by name, phone or flat…"
           autocomplete="off" oninput="filterAllRegs()"/>
       </div>
       <p id="all-regs-count" class="dash-loading" style="margin-bottom:12px"></p>
@@ -1973,27 +1973,22 @@ function renderAllRegs(regs) {
   });
   listEl.innerHTML = SPORTS
     .filter(s => bySport[s.name])
-    .map(s => `
-      <div class="pic-sport-heading" style="margin-top:16px">
-        <span>${s.emoji}</span><span>${s.name}</span>
-        <span class="reg-detail-tag">${bySport[s.name].length}</span>
-      </div>
-      ${bySport[s.name].map(d => `
-        <div class="reg-detail-card">
-          <div class="reg-detail-name">${d.name || '—'}</div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
-            ${d.ageCategory || (d.age ? 'Age ' + d.age : '')}${d.grade ? ' · ' + d.grade : ''} · ${d.gender || '—'} · ${d.regtype || '—'}
+    .map(s => {
+      const iconHTML = s.image
+        ? `<img src="${s.image}" style="width:24px;height:24px;object-fit:contain;vertical-align:middle" alt="${s.name}">`
+        : s.emoji;
+      const count = bySport[s.name].length;
+      return `
+        <button class="pic-sport-btn admin-sport-btn" style="margin-top:16px"
+          onclick="openPicSportDetail('${s.name.replace(/'/g, "\\'")}')">
+          <span class="pic-sport-btn-emoji">${iconHTML}</span>
+          <div class="pic-sport-btn-info">
+            <div class="pic-sport-btn-title">${s.name}</div>
+            <div class="pic-sport-btn-count admin-count">${count} registration${count !== 1 ? 's' : ''} — tap to filter &amp; download</div>
           </div>
-          <div class="reg-detail-tags">
-            <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
-            <span class="reg-detail-tag">Flat ${d.flat || '—'}</span>
-            ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
-          </div>
-          ${d.partnerName || d.partnerPhone ? `
-          <div style="font-size:11px;color:var(--text3);margin-top:6px">
-            Partner: ${d.partnerName || '—'} · ${d.partnerPhone ? makeWhatsAppLink(d.partnerPhone, d.partnerPhone, 'small') : '—'} · ${d.partnerFlat || '—'}
-          </div>` : ''}
-        </div>`).join('')}`)
+          <span class="pic-sport-btn-arrow">→</span>
+        </button>`;
+    })
     .join('');
 }
 
