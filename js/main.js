@@ -791,57 +791,35 @@ function skipAdminVerification() {
 // ── Tab bar renderer — called after profile loads so admin tab is conditional ──
 function renderTabBar() {
   const inner = document.querySelector('.tab-bar-inner');
-  if (isAdmin()) {
-    inner.innerHTML = `
-      <div class="tab-item" data-tab="home" onclick="switchTab('home')">
-        <span class="tab-icon">🏠</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Home</span>
+  inner.innerHTML = `
+    <div class="tab-item" data-tab="home" onclick="switchTab('home')">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Home</span>
+    </div>
+    <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span class="tab-icon">📊</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Dashboard</span>
+    </div>
+    <div class="tab-item" data-tab="quiz" onclick="switchTab('quiz')">
+      <span class="tab-icon">🧠</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Quiz</span>
+    </div>
+    <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
+      <div class="tab-icon-wrap">
+        <span class="tab-icon">📋</span>
+        <span class="tab-badge" id="tab-mylist-badge"></span>
       </div>
-      <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
-        <span class="tab-icon">📊</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Dashboard</span>
-      </div>
-      <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
-        <div class="tab-icon-wrap">
-          <span class="tab-icon">📋</span>
-          <span class="tab-badge" id="tab-mylist-badge"></span>
-        </div>
-        <span class="tab-dot"></span>
-        <span class="tab-label">My List</span>
-      </div>
-      <div class="tab-item admin-tab" data-tab="admin" onclick="switchTab('admin')">
-        <span class="tab-icon">👑</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Admin</span>
-      </div>`;
-  } else {
-    inner.innerHTML = `
-      <div class="tab-item" data-tab="home" onclick="switchTab('home')">
-        <span class="tab-icon">🏠</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Home</span>
-      </div>
-      <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">
-        <span class="tab-icon">📊</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Dashboard</span>
-      </div>
-      <div class="tab-item" data-tab="quiz" onclick="switchTab('quiz')">
-        <span class="tab-icon">🧠</span>
-        <span class="tab-dot"></span>
-        <span class="tab-label">Quiz</span>
-      </div>
-      <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
-        <div class="tab-icon-wrap">
-          <span class="tab-icon">📋</span>
-          <span class="tab-badge" id="tab-mylist-badge"></span>
-        </div>
-        <span class="tab-dot"></span>
-        <span class="tab-label">My List</span>
-      </div>`;
-  }
+      <span class="tab-dot"></span>
+      <span class="tab-label">My List</span>
+    </div>
+    ${isAdmin() ? `<div class="tab-item admin-tab" data-tab="admin" onclick="switchTab('admin')">
+      <span class="tab-icon">👑</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Admin</span>
+    </div>` : ''}`;
   updateMyListBadge();
 }
 
