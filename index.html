@@ -246,6 +246,14 @@
             <input type="tel" id="f-partner-phone" placeholder="e.g. 9876543210" maxlength="10"/>
           </div>
           <div class="form-group">
+            <label>Partner Gender</label>
+            <div class="partner-gender-auto" id="partner-gender-auto">
+              <label class="radio-opt" id="pg-male"><input type="radio" name="partner-gender" value="Male"/> Male</label>
+              <label class="radio-opt" id="pg-female"><input type="radio" name="partner-gender" value="Female"/> Female</label>
+            </div>
+            <div class="partner-gender-note" id="partner-gender-note">Select your gender above to auto-fill</div>
+          </div>
+          <div class="form-group">
             <label>Partner Block</label>
             <div class="block-radio-row" id="partner-block-row">
               <label class="block-radio-opt"><input type="radio" name="partner-block" value="A"/> A</label>
@@ -335,19 +343,37 @@
 
   <!-- SCREEN: SPORTS QUIZ -->
   <div id="screen-quiz" class="screen">
+    <!-- Quiz header with score and progress -->
     <div class="quiz-header">
       <div class="quiz-header-left">
         <div class="quiz-title">🧠 Sports Quiz</div>
-        <div class="quiz-subtitle">Daily challenge</div>
+        <div class="quiz-progress-text" id="quiz-progress-text">Question 1 of 500</div>
       </div>
       <div class="quiz-score-pill" id="quiz-score-pill">0 pts</div>
     </div>
-    <div class="quiz-date-banner" id="quiz-date-banner"></div>
-    <div class="quiz-content" id="quiz-content"></div>
-    <div class="quiz-leaderboard-section">
-      <div class="quiz-section-title">🏆 Leaderboard</div>
-      <div id="quiz-leaderboard"><div class="leaderboard-loading">Loading leaderboard…</div></div>
+
+    <!-- Progress bar -->
+    <div class="quiz-progress-bar-wrap">
+      <div class="quiz-progress-bar-track">
+        <div class="quiz-progress-bar-fill" id="quiz-progress-fill" style="width:0%"></div>
+      </div>
     </div>
+
+    <!-- Question area -->
+    <div class="quiz-content" id="quiz-content"></div>
+
+    <!-- Navigation buttons -->
+    <div class="quiz-nav-buttons" id="quiz-nav-buttons">
+      <button class="quiz-prev-btn" id="quiz-prev-btn" onclick="quizPrevQuestion()">← Prev</button>
+      <button class="quiz-next-btn" id="quiz-next-btn" onclick="quizNextQuestion()">Next →</button>
+    </div>
+
+    <!-- Leaderboard section -->
+    <div class="quiz-leaderboard-section">
+      <div class="quiz-section-title">🏆 Top Scorers</div>
+      <div id="quiz-leaderboard"><div class="leaderboard-loading">Loading…</div></div>
+    </div>
+
     <div class="made-with-love">
       Made by Ritesh. Reach out to me on <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">WhatsApp</a> for any assistance or feedback — happy to help!
     </div>
