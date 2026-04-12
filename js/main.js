@@ -781,7 +781,8 @@ async function openSportDetails(sport) {
   const pillsEl    = document.getElementById('subcategory-pills');
   if (sport.subcategories.length > 0) {
     const isMulti = !!sport.multiSelect;
-    subTitle.textContent = isMulti ? 'Select Events — choose all that apply' : 'Select Category';
+    subTitle.textContent = isMulti ? 'Select Events — choose all that apply. You can choose more than one.' : 'Select Category';
+    subTitle.classList.toggle('subcategory-title--multi', isMulti);
     pillsEl.className = isMulti ? 'subcategory-pills subcategory-pills--grid' : 'subcategory-pills';
     pillsEl.innerHTML = sport.subcategories.map(sub => {
       const meta = SUBCATEGORY_ICONS[sub] || { emoji: '🎯', desc: '' };
