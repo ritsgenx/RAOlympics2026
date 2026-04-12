@@ -117,7 +117,17 @@ const SPORTS = [
   },
   {
     name: "Water Sports", emoji: "🏊",
-    subcategories:   [],
+    multiSelect: true,
+    subcategories: [
+      "Kickboard — 10m × 2",
+      "Freestyle — 10m × 2",
+      "Backstroke — 10m × 2",
+      "Freestyle — 15m × 2",
+      "Backstroke — 15m × 2",
+      "Breaststroke — 15m × 2",
+      "Butterfly — 15m × 2",
+      "Medley Relay — 15m each (Team of 4)"
+    ],
     datetime:        "TBD",
     venue:           "Apartment Swimming Pool",
     maxParticipants: "50 swimmers",
@@ -370,7 +380,8 @@ function isAdmin() {
 
 // ── App state ──
 let currentSport       = null;
-let currentSubcategory = null;
+let currentSubcategory    = null;
+let selectedSubcategories = [];
 let currentAgeCategory = null;
 let userProfile        = null;
 let blockChart         = null;
@@ -401,6 +412,15 @@ const SUBCATEGORY_ICONS = {
   'Singles':       { emoji: '👤', desc: 'Play solo' },
   'Doubles':       { emoji: '👥', desc: 'Same gender pair' },
   'Mixed Doubles': { emoji: '🔀', desc: 'Mixed gender pair' },
+  // Water Sports
+  'Kickboard — 10m × 2':            { emoji: '🏊', desc: '' },
+  'Freestyle — 10m × 2':            { emoji: '🏊', desc: '' },
+  'Backstroke — 10m × 2':           { emoji: '🏊', desc: '' },
+  'Freestyle — 15m × 2':            { emoji: '🏊', desc: '' },
+  'Backstroke — 15m × 2':           { emoji: '🏊', desc: '' },
+  'Breaststroke — 15m × 2':         { emoji: '🏊', desc: '' },
+  'Butterfly — 15m × 2':            { emoji: '🦋', desc: '' },
+  'Medley Relay — 15m each (Team of 4)': { emoji: '🏅', desc: '' },
 };
 
 // ── Block graph config ──
@@ -704,8 +724,9 @@ function buildSportsGrid() {
 
 // ── Sport details ──
 async function openSportDetails(sport) {
-  currentSport       = sport;
-  currentSubcategory = null;
+  currentSport          = sport;
+  currentSubcategory    = null;
+  selectedSubcategories = [];
 
   document.getElementById('det-emoji').innerHTML = sport.image
     ? `<img src="${sport.image}" style="width:56px;height:56px;object-fit:contain" alt="${sport.name}">`
@@ -756,22 +777,37 @@ async function openSportDetails(sport) {
 
   // ── Subcategory pills ──
   const subSection = document.getElementById('subcategory-section');
+  const subTitle   = subSection.querySelector('.subcategory-title');
   const pillsEl    = document.getElementById('subcategory-pills');
   if (sport.subcategories.length > 0) {
+    const isMulti = !!sport.multiSelect;
+    subTitle.textContent = isMulti ? 'Select Events — choose all that apply' : 'Select Category';
+    pillsEl.className = isMulti ? 'subcategory-pills subcategory-pills--grid' : 'subcategory-pills';
     pillsEl.innerHTML = sport.subcategories.map(sub => {
       const meta = SUBCATEGORY_ICONS[sub] || { emoji: '🎯', desc: '' };
       return `
         <button class="subcategory-pill" data-sub="${sub}">
           <span class="subcategory-pill-icon">${meta.emoji}</span>
           <span class="subcategory-pill-label">${sub}</span>
-          <span class="subcategory-pill-desc">${meta.desc}</span>
+          ${meta.desc ? `<span class="subcategory-pill-desc">${meta.desc}</span>` : ''}
         </button>`;
     }).join('');
     pillsEl.querySelectorAll('.subcategory-pill').forEach(btn => {
       btn.addEventListener('click', () => {
-        pillsEl.querySelectorAll('.subcategory-pill').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        currentSubcategory = btn.dataset.sub;
+        if (isMulti) {
+          btn.classList.toggle('selected');
+          const sub = btn.dataset.sub;
+          if (btn.classList.contains('selected')) {
+            selectedSubcategories.push(sub);
+          } else {
+            selectedSubcategories = selectedSubcategories.filter(s => s !== sub);
+          }
+          currentSubcategory = selectedSubcategories.length ? selectedSubcategories.join(' | ') : null;
+        } else {
+          pillsEl.querySelectorAll('.subcategory-pill').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          currentSubcategory = btn.dataset.sub;
+        }
       });
     });
     subSection.style.display = 'block';
@@ -799,7 +835,7 @@ async function openSportDetails(sport) {
     notice.style.display  = 'none';
     btn.onclick = () => {
       if (sport.subcategories.length > 0 && !currentSubcategory) {
-        showToast('Please select a category first', true);
+        showToast(sport.multiSelect ? 'Please select at least one event' : 'Please select a category first', true);
         return;
       }
       openRegistrationForm(sport);

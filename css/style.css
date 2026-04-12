@@ -876,6 +876,23 @@ html, body {
   display: flex;
   gap: 10px;
 }
+.subcategory-pills--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.subcategory-pills--grid .subcategory-pill {
+  flex: unset;
+  padding: 14px 12px 12px;
+  gap: 5px;
+}
+.subcategory-pills--grid .subcategory-pill-icon {
+  font-size: 26px;
+}
+.subcategory-pills--grid .subcategory-pill-label {
+  font-size: 12px;
+  line-height: 1.3;
+}
 .subcategory-pill {
   flex: 1;
   display: flex;
