@@ -269,15 +269,15 @@ const SPORTS = [
     ]
   },
   {
-    name: "Billiards / Pool", emoji: "🎱",
-    subcategories:   ["8-Ball Pool", "Billiards"],
+    name: "8-Ball Pool", emoji: "🎱",
+    subcategories:   ["8-Ball Pool"],
     datetime:        "TBD",
     venue:           "Club House — Billiards Room",
     maxParticipants: "16 players",
     ageGroup:        "16 years & above",
     contact:         "TBD",
     rules: [
-      "8-Ball Pool and Billiards — separate categories",
+      "8-Ball Pool — single category",
       "Single elimination knockout format",
       "Cues, balls and table provided by organizers",
       "Standard World Pool rules apply",
