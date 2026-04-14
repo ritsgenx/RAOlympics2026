@@ -346,23 +346,6 @@ const SPORTS = [
       "Separate Junior (under 15) and Open categories"
     ]
   },
-  {
-    name: "Online Video Games", emoji: "🎮",
-    subcategories:   ["BGMI / PUBG", "Free Fire", "FIFA / eFootball", "Other"],
-    datetime:        "TBD",
-    venue:           "Online — from your own device",
-    maxParticipants: "40 players",
-    ageGroup:        "12 years & above",
-    contact:         "TBD",
-    rules: [
-      "Choose your game category at registration",
-      "Matches coordinated via WhatsApp group",
-      "Players must use their own device and internet",
-      "Fair play — no hacks, mods or emulators",
-      "Game ID / username required at registration",
-      "Schedule shared 24 hours before match"
-    ]
-  },
 ];
 
 
