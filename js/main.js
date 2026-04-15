@@ -381,6 +381,11 @@ let quizSelectedAnswer    = null;
 let quizQuestionCache     = {};
 let quizProgressDocExists = false;
 
+// ── Dashboard cache ──
+let dashboardCache = null;
+let dashboardCacheTime = 0;
+const DASHBOARD_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 // ── PIC participant filter state ──
 let allParticipants      = [];
 let filteredParticipants = [];
@@ -1200,6 +1205,48 @@ async function loadDashboard() {
     greetEl.innerHTML = '';
   }
 
+  // Inject refresh button into header (once)
+  const dashHeader = document.querySelector('#screen-dashboard .dash-header');
+  if (dashHeader && !document.getElementById('dash-refresh-btn')) {
+    const refreshBtn = document.createElement('button');
+    refreshBtn.id        = 'dash-refresh-btn';
+    refreshBtn.title     = 'Refresh data';
+    refreshBtn.innerHTML = '🔄';
+    Object.assign(refreshBtn.style, {
+      position: 'absolute', top: '14px', right: '16px',
+      background: 'none', border: 'none', fontSize: '20px',
+      cursor: 'pointer', opacity: '0.75', lineHeight: '1'
+    });
+    dashHeader.style.position = 'relative';
+    refreshBtn.addEventListener('click', () => {
+      dashboardCache     = null;
+      dashboardCacheTime = 0;
+      loadDashboard();
+    });
+    dashHeader.appendChild(refreshBtn);
+  }
+
+  // Inject cache-status element below stats (once)
+  if (!document.getElementById('dash-cache-status')) {
+    const statsEl = document.querySelector('#screen-dashboard .dash-stats');
+    if (statsEl) {
+      const statusEl = document.createElement('div');
+      statusEl.id = 'dash-cache-status';
+      Object.assign(statusEl.style, {
+        textAlign: 'center', fontSize: '11px',
+        color: 'rgba(255,255,255,0.4)', marginBottom: '4px'
+      });
+      statsEl.insertAdjacentElement('afterend', statusEl);
+    }
+  }
+
+  // Cache check — skip Firestore if data is still fresh
+  const now = Date.now();
+  if (dashboardCache && (now - dashboardCacheTime) < DASHBOARD_CACHE_DURATION) {
+    renderDashboardFromData(dashboardCache);
+    return;
+  }
+
   const chartEl      = document.getElementById('dash-chart');
   const sportChartEl = document.getElementById('dash-sport-chart');
   chartEl.innerHTML      = '<p class="dash-loading">Loading...</p>';
@@ -1211,88 +1258,104 @@ async function loadDashboard() {
   try {
     const snap = await getDocs(collection(db, 'registrations'));
     const docs = snap.docs.map(d => d.data());
-
-    if (docs.length === 0) {
-      document.getElementById('dash-total').textContent  = '0';
-      document.getElementById('dash-blocks').textContent = '0';
-      document.getElementById('dash-sports').textContent = '0';
-      chartEl.innerHTML = '<div class="empty-state">No registrations yet. Go pick a sport!</div>';
-      return;
-    }
-
-    // Extract block — flat is stored as "A-1104"
-    function extractBlock(flat) {
-      if (!flat) return '?';
-      const first = flat.charAt(0).toUpperCase();
-      return (first >= 'A' && first <= 'Z') ? first : '?';
-    }
-
-    const blockCounts = {};
-    const sportCounts = {};
-    docs.forEach(d => {
-      const b = extractBlock(d.flat);
-      blockCounts[b] = (blockCounts[b] || 0) + 1;
-      const s = d.sport || 'Unknown';
-      sportCounts[s] = (sportCounts[s] || 0) + 1;
-    });
-
-    const validBlocks = Object.keys(blockCounts).filter(b => b !== '?');
-    document.getElementById('dash-total').textContent  = docs.length;
-    document.getElementById('dash-blocks').textContent = validBlocks.length;
-    document.getElementById('dash-sports').textContent = Object.keys(sportCounts).length;
-
-    // Block chart
-    const sortedBlocks = Object.entries(blockCounts)
-      .filter(([b]) => b !== '?')
-      .sort(([a], [b]) => a.localeCompare(b));
-    const maxBlock = Math.max(...sortedBlocks.map(([, c]) => c), 1);
-    chartEl.innerHTML = sortedBlocks.map(([block, count]) => {
-      const pct = ((count / maxBlock) * 100).toFixed(1);
-      return `<div class="chart-row">
-        <div class="chart-label">Block ${block}</div>
-        <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
-        <div class="chart-count">${count}</div>
-      </div>`;
-    }).join('');
-
-    // Sport chart
-    const sortedSports = Object.entries(sportCounts).sort(([, a], [, b]) => b - a);
-    const maxSport = Math.max(...sortedSports.map(([, c]) => c), 1);
-    sportChartEl.innerHTML = sortedSports.map(([sport, count]) => {
-      const pct = ((count / maxSport) * 100).toFixed(1);
-      return `<div class="chart-row">
-        <div class="chart-label">${sport}</div>
-        <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
-        <div class="chart-count">${count}</div>
-      </div>`;
-    }).join('');
-
-    // Animate bars after paint
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.querySelectorAll('.chart-bar').forEach(bar => {
-          bar.style.width = bar.dataset.w;
-        });
-      }, 50);
-    });
-
-    // Role-based participant detail sections
-    const oldRoleSection = document.getElementById('dash-role-section');
-    if (oldRoleSection) oldRoleSection.remove();
-
-    const showPic   = userProfile.role === 'pic' && (userProfile.picSports || []).length > 0;
-    const showAdminData = isAdmin();
-    if (showPic || showAdminData) {
-      const roleSection = document.createElement('div');
-      roleSection.id = 'dash-role-section';
-      document.querySelector('#screen-dashboard .screen-inner').appendChild(roleSection);
-      if (showPic)       renderPicSection(roleSection, userProfile.picSports, docs);
-      if (showAdminData) renderAdminDataSection(roleSection, docs);
-    }
-
+    dashboardCache     = docs;
+    dashboardCacheTime = Date.now();
+    renderDashboardFromData(docs);
   } catch (err) {
     console.error(err);
     chartEl.innerHTML = '<div class="empty-state">Could not load data. Try again later.</div>';
+  }
+}
+
+function renderDashboardFromData(docs) {
+  const chartEl      = document.getElementById('dash-chart');
+  const sportChartEl = document.getElementById('dash-sport-chart');
+
+  // Update "last updated" text
+  const statusEl = document.getElementById('dash-cache-status');
+  if (statusEl && dashboardCacheTime) {
+    const minutesAgo = Math.floor((Date.now() - dashboardCacheTime) / 60000);
+    statusEl.textContent = minutesAgo === 0
+      ? 'Last updated just now'
+      : `Last updated ${minutesAgo} minute${minutesAgo !== 1 ? 's' : ''} ago`;
+  }
+
+  if (docs.length === 0) {
+    document.getElementById('dash-total').textContent  = '0';
+    document.getElementById('dash-blocks').textContent = '0';
+    document.getElementById('dash-sports').textContent = '0';
+    chartEl.innerHTML = '<div class="empty-state">No registrations yet. Go pick a sport!</div>';
+    return;
+  }
+
+  // Extract block — flat is stored as "A-1104"
+  function extractBlock(flat) {
+    if (!flat) return '?';
+    const first = flat.charAt(0).toUpperCase();
+    return (first >= 'A' && first <= 'Z') ? first : '?';
+  }
+
+  const blockCounts = {};
+  const sportCounts = {};
+  docs.forEach(d => {
+    const b = extractBlock(d.flat);
+    blockCounts[b] = (blockCounts[b] || 0) + 1;
+    const s = d.sport || 'Unknown';
+    sportCounts[s] = (sportCounts[s] || 0) + 1;
+  });
+
+  const validBlocks = Object.keys(blockCounts).filter(b => b !== '?');
+  document.getElementById('dash-total').textContent  = docs.length;
+  document.getElementById('dash-blocks').textContent = validBlocks.length;
+  document.getElementById('dash-sports').textContent = Object.keys(sportCounts).length;
+
+  // Block chart
+  const sortedBlocks = Object.entries(blockCounts)
+    .filter(([b]) => b !== '?')
+    .sort(([a], [b]) => a.localeCompare(b));
+  const maxBlock = Math.max(...sortedBlocks.map(([, c]) => c), 1);
+  chartEl.innerHTML = sortedBlocks.map(([block, count]) => {
+    const pct = ((count / maxBlock) * 100).toFixed(1);
+    return `<div class="chart-row">
+      <div class="chart-label">Block ${block}</div>
+      <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
+      <div class="chart-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Sport chart
+  const sortedSports = Object.entries(sportCounts).sort(([, a], [, b]) => b - a);
+  const maxSport = Math.max(...sortedSports.map(([, c]) => c), 1);
+  sportChartEl.innerHTML = sortedSports.map(([sport, count]) => {
+    const pct = ((count / maxSport) * 100).toFixed(1);
+    return `<div class="chart-row">
+      <div class="chart-label">${sport}</div>
+      <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
+      <div class="chart-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Animate bars after paint
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.chart-bar').forEach(bar => {
+        bar.style.width = bar.dataset.w;
+      });
+    }, 50);
+  });
+
+  // Role-based participant detail sections
+  const oldRoleSection = document.getElementById('dash-role-section');
+  if (oldRoleSection) oldRoleSection.remove();
+
+  const showPic       = userProfile.role === 'pic' && (userProfile.picSports || []).length > 0;
+  const showAdminData = isAdmin();
+  if (showPic || showAdminData) {
+    const roleSection = document.createElement('div');
+    roleSection.id = 'dash-role-section';
+    document.querySelector('#screen-dashboard .screen-inner').appendChild(roleSection);
+    if (showPic)       renderPicSection(roleSection, userProfile.picSports, docs);
+    if (showAdminData) renderAdminDataSection(roleSection, docs);
   }
 }
 
