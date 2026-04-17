@@ -992,6 +992,10 @@ async function submitRegistration() {
       });
     }
 
+    // Update registration summary (non-blocking — fails silently inside the function)
+    const userBlock = userProfile.flat ? userProfile.flat.charAt(0).toUpperCase() : 'Unknown';
+    await updateRegistrationSummary(currentSport.name, userBlock, partnerBlock);
+
     const sportLabel = currentSubcategory
       ? `${currentSport.name} (${currentSubcategory})`
       : currentSport.name;
@@ -1005,6 +1009,38 @@ async function submitRegistration() {
     showToast('Registration failed. Please try again.', true);
   } finally {
     showLoading(false);
+  }
+}
+
+// ── Registration summary updater ──
+async function updateRegistrationSummary(sportName, block, partnerBlock) {
+  try {
+    const summaryRef  = doc(db, 'config', 'registrationSummary');
+    const summarySnap = await getDoc(summaryRef);
+
+    let summary = { totalRegistrations: 0, byBlock: {}, bySport: {}, lastUpdated: null };
+    if (summarySnap.exists()) summary = summarySnap.data();
+
+    // Primary registrant
+    summary.totalRegistrations = (summary.totalRegistrations || 0) + 1;
+    const blockKey = block || 'Unknown';
+    summary.byBlock[blockKey] = (summary.byBlock[blockKey] || 0) + 1;
+    summary.bySport[sportName] = (summary.bySport[sportName] || 0) + 1;
+    summary.lastUpdated = serverTimestamp();
+    await setDoc(summaryRef, summary);
+
+    // Partner registrant — re-fetch to avoid race condition
+    if (partnerBlock) {
+      const freshSnap    = await getDoc(summaryRef);
+      const freshSummary = freshSnap.data();
+      freshSummary.totalRegistrations = (freshSummary.totalRegistrations || 0) + 1;
+      freshSummary.byBlock[partnerBlock] = (freshSummary.byBlock[partnerBlock] || 0) + 1;
+      freshSummary.bySport[sportName]    = (freshSummary.bySport[sportName]    || 0) + 1;
+      freshSummary.lastUpdated = serverTimestamp();
+      await setDoc(summaryRef, freshSummary);
+    }
+  } catch(err) {
+    console.error('Summary update failed:', err);
   }
 }
 
@@ -1240,44 +1276,63 @@ async function loadDashboard() {
     }
   }
 
-  // Cache check — skip Firestore if data is still fresh
-  const now = Date.now();
-  if (dashboardCache && (now - dashboardCacheTime) < DASHBOARD_CACHE_DURATION) {
-    renderDashboardFromData(dashboardCache);
-    return;
-  }
-
   const chartEl      = document.getElementById('dash-chart');
   const sportChartEl = document.getElementById('dash-sport-chart');
-  chartEl.innerHTML      = '<p class="dash-loading">Loading...</p>';
-  sportChartEl.innerHTML = '';
-  document.getElementById('dash-total').textContent  = '—';
-  document.getElementById('dash-blocks').textContent = '—';
-  document.getElementById('dash-sports').textContent = '—';
 
-  try {
-    const snap = await getDocs(collection(db, 'registrations'));
-    const docs = snap.docs.map(d => d.data());
-    dashboardCache     = docs;
-    dashboardCacheTime = Date.now();
-    renderDashboardFromData(docs);
-  } catch (err) {
-    console.error(err);
-    chartEl.innerHTML = '<div class="empty-state">Could not load data. Try again later.</div>';
+  if (isAdmin()) {
+    // ── Admin path: fetch all docs, cache for 5 minutes ──
+    const now = Date.now();
+    if (dashboardCache && (now - dashboardCacheTime) < DASHBOARD_CACHE_DURATION) {
+      renderDashboardFromData(dashboardCache, 'cached');
+      return;
+    }
+    chartEl.innerHTML      = '<p class="dash-loading">Loading...</p>';
+    sportChartEl.innerHTML = '';
+    document.getElementById('dash-total').textContent  = '—';
+    document.getElementById('dash-blocks').textContent = '—';
+    document.getElementById('dash-sports').textContent = '—';
+    try {
+      const snap = await getDocs(collection(db, 'registrations'));
+      const docs = snap.docs.map(d => d.data());
+      dashboardCache     = docs;
+      dashboardCacheTime = Date.now();
+      renderDashboardFromData(docs, 'live');
+    } catch (err) {
+      console.error(err);
+      chartEl.innerHTML = '<div class="empty-state">Could not load data. Try again later.</div>';
+    }
+  } else {
+    // ── Participant / PIC path: 1 read from summary doc ──
+    chartEl.innerHTML      = '<p class="dash-loading">Loading...</p>';
+    sportChartEl.innerHTML = '';
+    document.getElementById('dash-total').textContent  = '—';
+    document.getElementById('dash-blocks').textContent = '—';
+    document.getElementById('dash-sports').textContent = '—';
+    try {
+      const summarySnap = await getDoc(doc(db, 'config', 'registrationSummary'));
+      renderDashboardFromSummary(summarySnap.exists() ? summarySnap.data() : null);
+    } catch (err) {
+      console.error(err);
+      chartEl.innerHTML = '<div class="empty-state">Could not load data. Try again later.</div>';
+    }
   }
 }
 
-function renderDashboardFromData(docs) {
+function renderDashboardFromData(docs, source) {
   const chartEl      = document.getElementById('dash-chart');
   const sportChartEl = document.getElementById('dash-sport-chart');
 
-  // Update "last updated" text
+  // Update cache / live status indicator
   const statusEl = document.getElementById('dash-cache-status');
-  if (statusEl && dashboardCacheTime) {
-    const minutesAgo = Math.floor((Date.now() - dashboardCacheTime) / 60000);
-    statusEl.textContent = minutesAgo === 0
-      ? 'Last updated just now'
-      : `Last updated ${minutesAgo} minute${minutesAgo !== 1 ? 's' : ''} ago`;
+  if (statusEl) {
+    const style = 'text-align:center;font-size:11px;color:var(--text3);margin-bottom:4px;font-style:italic';
+    statusEl.style.cssText = style;
+    if (source === 'cached' && dashboardCacheTime) {
+      const minsRemaining = Math.max(1, Math.ceil((DASHBOARD_CACHE_DURATION - (Date.now() - dashboardCacheTime)) / 60000));
+      statusEl.innerHTML = `📊 Cached · Refreshes in ${minsRemaining} min${minsRemaining !== 1 ? 's' : ''} <button onclick="dashboardCache=null;dashboardCacheTime=0;loadDashboard()" title="Refresh now" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;opacity:0.7;vertical-align:middle">🔄</button>`;
+    } else {
+      statusEl.textContent = '📊 Live data · Just loaded';
+    }
   }
 
   if (docs.length === 0) {
@@ -1359,8 +1414,92 @@ function renderDashboardFromData(docs) {
   }
 }
 
+// ── Dashboard renderer for participant / PIC view (reads from summary doc) ──
+function renderDashboardFromSummary(summary) {
+  const chartEl      = document.getElementById('dash-chart');
+  const sportChartEl = document.getElementById('dash-sport-chart');
+  const statusEl     = document.getElementById('dash-cache-status');
+  const styleStr     = 'text-align:center;font-size:11px;color:var(--text3);margin-bottom:4px;font-style:italic';
+
+  if (!summary || !summary.totalRegistrations) {
+    document.getElementById('dash-total').textContent  = '0';
+    document.getElementById('dash-blocks').textContent = '0';
+    document.getElementById('dash-sports').textContent = '0';
+    chartEl.innerHTML      = '<div class="empty-state">No registrations yet. Go pick a sport!</div>';
+    sportChartEl.innerHTML = '';
+    if (statusEl) { statusEl.style.cssText = styleStr; statusEl.textContent = '📊 No registrations yet'; }
+    return;
+  }
+
+  // Status indicator — show time since last summary update
+  if (statusEl) {
+    statusEl.style.cssText = styleStr;
+    let lastStr = 'recently';
+    if (summary.lastUpdated && summary.lastUpdated.toDate) {
+      const mins = Math.floor((Date.now() - summary.lastUpdated.toDate().getTime()) / 60000);
+      lastStr = mins === 0 ? 'just now' : `${mins} min${mins !== 1 ? 's' : ''} ago`;
+    }
+    statusEl.textContent = `📊 Live counts · Updated ${lastStr}`;
+  }
+
+  const byBlock  = summary.byBlock  || {};
+  const bySport  = summary.bySport  || {};
+
+  const validBlocks = Object.keys(byBlock).filter(b => b !== 'Unknown' && b !== '?');
+  document.getElementById('dash-total').textContent  = summary.totalRegistrations;
+  document.getElementById('dash-blocks').textContent = validBlocks.length;
+  document.getElementById('dash-sports').textContent = Object.keys(bySport).length;
+
+  // Block chart
+  const sortedBlocks = Object.entries(byBlock)
+    .filter(([b]) => b !== 'Unknown' && b !== '?')
+    .sort(([a], [b]) => a.localeCompare(b));
+  const maxBlock = Math.max(...sortedBlocks.map(([, c]) => c), 1);
+  chartEl.innerHTML = sortedBlocks.map(([block, count]) => {
+    const pct = ((count / maxBlock) * 100).toFixed(1);
+    return `<div class="chart-row">
+      <div class="chart-label">Block ${block}</div>
+      <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
+      <div class="chart-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Sport chart
+  const sortedSports = Object.entries(bySport).sort(([, a], [, b]) => b - a);
+  const maxSport = Math.max(...sortedSports.map(([, c]) => c), 1);
+  sportChartEl.innerHTML = sortedSports.map(([sport, count]) => {
+    const pct = ((count / maxSport) * 100).toFixed(1);
+    return `<div class="chart-row">
+      <div class="chart-label">${sport}</div>
+      <div class="chart-track"><div class="chart-bar" style="width:0%" data-w="${pct}%"></div></div>
+      <div class="chart-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Animate bars after paint
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.chart-bar').forEach(bar => {
+        bar.style.width = bar.dataset.w;
+      });
+    }, 50);
+  });
+
+  // PIC section — show sport buttons with counts from summary
+  const oldRoleSection = document.getElementById('dash-role-section');
+  if (oldRoleSection) oldRoleSection.remove();
+
+  const showPic = userProfile.role === 'pic' && (userProfile.picSports || []).length > 0;
+  if (showPic) {
+    const roleSection = document.createElement('div');
+    roleSection.id = 'dash-role-section';
+    document.querySelector('#screen-dashboard .screen-inner').appendChild(roleSection);
+    renderPicSection(roleSection, userProfile.picSports, null, summary);
+  }
+}
+
 // ── PIC participant detail section — sport selection buttons ──
-function renderPicSection(container, sports, allDocs) {
+function renderPicSection(container, sports, allDocs, summary) {
   const wrap = document.createElement('div');
   wrap.innerHTML = '<div class="admin-section-title teal">🟢 List of Sports I am Coordinating</div>';
   sports.forEach(sportName => {
@@ -1368,7 +1507,9 @@ function renderPicSection(container, sports, allDocs) {
     const iconHTML  = sportObj && sportObj.image
       ? `<img src="${sportObj.image}" style="width:32px;height:32px;object-fit:contain" alt="${sportName}">`
       : (sportObj ? sportObj.emoji : '🏆');
-    const count    = allDocs.filter(d => d.sport === sportName).length;
+    const count = summary
+      ? ((summary.bySport || {})[sportName] || 0)
+      : allDocs.filter(d => d.sport === sportName).length;
     const btn      = document.createElement('button');
     btn.className  = 'pic-sport-btn';
     btn.innerHTML  = `
@@ -1509,6 +1650,69 @@ function renderAdminDataSection(container, allDocs) {
   container.appendChild(wrap);
 }
 
+// ── Rebuild registration summary from all existing docs ──
+async function rebuildSummaryFromScratch() {
+  showLoading(true);
+  try {
+    showToast('Rebuilding summary…');
+    const snap = await getDocs(collection(db, 'registrations'));
+
+    const summary = { totalRegistrations: 0, byBlock: {}, bySport: {}, lastUpdated: serverTimestamp() };
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      summary.totalRegistrations++;
+
+      // Handle both "A-1104" (primary) and "Block B, Flat 1104" (partner) flat formats
+      const flat = data.flat || '';
+      const blockMatch = flat.match(/^([A-Fa-f])-/) || flat.match(/Block\s*([A-Fa-f])/i);
+      const blockKey = blockMatch
+        ? blockMatch[1].toUpperCase()
+        : (data.block && /^[A-Fa-f]$/i.test(data.block) ? data.block.toUpperCase() : 'Unknown');
+      summary.byBlock[blockKey] = (summary.byBlock[blockKey] || 0) + 1;
+
+      const sport = data.sport || 'Unknown';
+      summary.bySport[sport] = (summary.bySport[sport] || 0) + 1;
+    });
+
+    await setDoc(doc(db, 'config', 'registrationSummary'), summary);
+
+    // Clear dashboard cache so admin view also reloads fresh
+    dashboardCache     = null;
+    dashboardCacheTime = 0;
+
+    showToast(`Summary rebuilt — ${summary.totalRegistrations} registrations counted`);
+    loadDashboard();
+  } catch(err) {
+    console.error(err);
+    showToast('Rebuild failed: ' + err.message, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── Admin Maintenance section — injected dynamically (no HTML changes needed) ──
+function setupAdminMaintenanceSection() {
+  if (!isAdmin()) return;
+  if (document.getElementById('admin-maintenance-section')) return;
+
+  const grid = document.querySelector('#screen-admin .admin-control-grid');
+  if (!grid) return;
+
+  const section = document.createElement('div');
+  section.id = 'admin-maintenance-section';
+  section.style.cssText = 'padding:4px 16px 20px';
+  section.innerHTML = `
+    <div class="admin-section-title gold" style="margin-bottom:12px">🔧 Maintenance</div>
+    <button class="btn-secondary" onclick="rebuildSummaryFromScratch()" style="width:100%;text-align:center">
+      🔄 Rebuild Registration Summary
+    </button>
+    <p style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">
+      Run once after deploying to sync existing registrations
+    </p>`;
+  grid.insertAdjacentElement('afterend', section);
+}
+
 // ── Navigation ──
 const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations', 'screen-admin', 'screen-quiz'];
 
@@ -1523,6 +1727,7 @@ function showScreen(id) {
   if (id === 'screen-graph')         loadBlockGraph();
   if (id === 'screen-sports')        loadAnnouncementBanner();
   if (id === 'screen-quiz')          loadQuizScreen();
+  if (id === 'screen-admin')         setupAdminMaintenanceSection();
 }
 
 function switchTab(tabName) {
@@ -2696,3 +2901,4 @@ window.toggleFilterPanel       = toggleFilterPanel;
 window.toggleFilter            = toggleFilter;
 window.clearAllFilters         = clearAllFilters;
 window.downloadParticipants    = downloadParticipants;
+window.rebuildSummaryFromScratch = rebuildSummaryFromScratch;
