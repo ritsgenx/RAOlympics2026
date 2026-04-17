@@ -313,7 +313,7 @@ const SPORTS = [
     ]
   },
   {
-    name: "Rubik's Cube", emoji: "🎲", image: "images/rubiks.png",
+    name: "Rubik's Cube", emoji: "🎲", image: "images/rubiks.png", poster: "images/rubik_poster.jpeg",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Club House — Conference Room",
@@ -829,6 +829,18 @@ async function openSportDetails(sport) {
       }
       openRegistrationForm(sport);
     };
+  }
+
+  // Show poster if sport has one
+  const posterWrap = document.getElementById('sport-poster-wrap');
+  const posterImg  = document.getElementById('sport-poster-img');
+  if (sport.poster && posterWrap && posterImg) {
+    posterImg.src = sport.poster;
+    posterImg.alt = sport.name + ' Event Poster';
+    posterWrap.style.display = 'block';
+  } else {
+    if (posterWrap) posterWrap.style.display = 'none';
+    if (posterImg)  posterImg.src = '';
   }
 
   showScreen('screen-details');

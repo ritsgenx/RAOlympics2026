@@ -2675,3 +2675,19 @@ textarea.edit-field-input {
   font-size: 14px;
 }
 
+/* ── Sport poster ── */
+.sport-poster-wrap {
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.sport-poster-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+}
+
