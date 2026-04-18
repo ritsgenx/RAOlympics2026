@@ -1876,7 +1876,8 @@ async function loadSportDetailsEdit() {
 
     container.innerHTML = SPORTS.map(sport => {
       const s        = settings[sport.name] || {};
-      const slug     = sport.name.toLowerCase().replace(/\s+/g, '-');
+      const slug     = sport.name.toLowerCase().replace(/'/g, '').replace(/\s+/g, '-');
+      const safeName = sport.name.replace(/'/g, "\\'");
       const datetime = s.datetime  || sport.datetime;
       const venue    = s.venue     || sport.venue;
       const contact  = s.contact   || sport.contact;
@@ -1904,7 +1905,7 @@ async function loadSportDetailsEdit() {
             <textarea class="edit-field-input" id="edit-rules-${slug}">${rules}</textarea>
             <p style="font-size:11px;color:var(--text3);margin-top:4px">Enter each rule on a new line</p>
             <div class="edit-actions">
-              <button class="btn-save" onclick="saveSportDetails('${sport.name}')">Save Changes</button>
+              <button class="btn-save" onclick="saveSportDetails('${safeName}')">Save Changes</button>
               <button class="btn-cancel" onclick="toggleSportEditCard('${slug}')">Cancel</button>
             </div>
           </div>
@@ -1921,7 +1922,7 @@ function toggleSportEditCard(slug) {
 }
 
 async function saveSportDetails(sportName) {
-  const slug     = sportName.toLowerCase().replace(/\s+/g, '-');
+  const slug     = sportName.toLowerCase().replace(/'/g, '').replace(/\s+/g, '-');
   const datetime = document.getElementById(`edit-datetime-${slug}`).value.trim();
   const venue    = document.getElementById(`edit-venue-${slug}`).value.trim();
   const contact  = document.getElementById(`edit-contact-${slug}`).value.trim();
