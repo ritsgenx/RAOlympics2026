@@ -346,6 +346,23 @@ const SPORTS = [
       "Separate Junior (under 15) and Open categories"
     ]
   },
+  {
+    name: "Skating", emoji: "⛸️",
+    subcategories:   ["Individual"],
+    datetime:        "TBD",
+    venue:           "Apartment Skating Rink / Open Ground",
+    maxParticipants: "40 participants",
+    ageGroup:        "Kids (6–14), Adults (15+)",
+    contact:         "TBD",
+    rules: [
+      "Individual category — knockout format",
+      "Helmet, knee pads, and elbow pads are mandatory",
+      "Participants must bring their own skates",
+      "Separate age brackets: Kids (6–14) and Adults (15+)",
+      "Judged on speed, form, and control",
+      "Participants must report 15 min before their event"
+    ]
+  },
 ];
 
 
@@ -400,6 +417,8 @@ const SUBCATEGORY_ICONS = {
   'Singles':       { emoji: '👤', desc: 'Play solo' },
   'Doubles':       { emoji: '👥', desc: 'Same gender pair' },
   'Mixed Doubles': { emoji: '🔀', desc: 'Mixed gender pair' },
+  // Skating
+  'Individual':    { emoji: '⛸️', desc: 'Solo skating' },
   // Water Sports
   'Kickboard — 10m × 2':            { emoji: '🏊', desc: '' },
   'Freestyle — 10m × 2':            { emoji: '🏊', desc: '' },
