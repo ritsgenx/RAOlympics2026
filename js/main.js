@@ -401,6 +401,7 @@ let quizProgressDocExists = false;
 // ── Dashboard cache ──
 let dashboardCache = null;
 let dashboardCacheTime = 0;
+let graphVisibility = { showBlockGraph: true, showSportGraph: true };
 const DASHBOARD_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // ── PIC participant filter state ──
@@ -1250,6 +1251,20 @@ async function loadBlockGraph() {
 
 // ── Dashboard ──
 async function loadDashboard() {
+  // Fetch graph visibility settings from Firestore
+  try {
+    const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
+    if (gvSnap.exists()) {
+      const d = gvSnap.data();
+      graphVisibility.showBlockGraph = d.showBlockGraph !== false;
+      graphVisibility.showSportGraph = d.showSportGraph !== false;
+    } else {
+      graphVisibility = { showBlockGraph: true, showSportGraph: true };
+    }
+  } catch (e) {
+    graphVisibility = { showBlockGraph: true, showSportGraph: true };
+  }
+
   // PIC / Admin personalised greeting
   const greetEl   = document.getElementById('dash-pic-greeting');
   const firstName = userProfile.name.split(' ')[0];
@@ -1421,6 +1436,14 @@ function renderDashboardFromData(docs, source) {
     </div>`;
   }).join('');
 
+  // Apply graph visibility (admin-controlled)
+  const blockVisible = graphVisibility.showBlockGraph;
+  const sportVisible = graphVisibility.showSportGraph;
+  document.getElementById('dash-block-title').style.display = blockVisible ? '' : 'none';
+  document.getElementById('dash-chart').style.display        = blockVisible ? '' : 'none';
+  document.getElementById('dash-sport-title').style.display  = sportVisible ? '' : 'none';
+  document.getElementById('dash-sport-chart').style.display  = sportVisible ? '' : 'none';
+
   // Animate bars after paint
   requestAnimationFrame(() => {
     setTimeout(() => {
@@ -1506,6 +1529,14 @@ function renderDashboardFromSummary(summary) {
       <div class="chart-count">${count}</div>
     </div>`;
   }).join('');
+
+  // Apply graph visibility (admin-controlled)
+  const blockVisible = graphVisibility.showBlockGraph;
+  const sportVisible = graphVisibility.showSportGraph;
+  document.getElementById('dash-block-title').style.display = blockVisible ? '' : 'none';
+  document.getElementById('dash-chart').style.display        = blockVisible ? '' : 'none';
+  document.getElementById('dash-sport-title').style.display  = sportVisible ? '' : 'none';
+  document.getElementById('dash-sport-chart').style.display  = sportVisible ? '' : 'none';
 
   // Animate bars after paint
   requestAnimationFrame(() => {
@@ -1843,24 +1874,66 @@ async function loadManageSports() {
     const settings = {};
     snap.docs.forEach(d => { settings[d.id] = d.data(); });
 
-    container.innerHTML = SPORTS.map(sport => {
-      const isOpen = settings[sport.name]?.registrationOpen !== false;
-      return `
-        <div class="sport-setting-row">
-          <span style="font-size:22px">${sport.emoji}</span>
-          <div class="sport-setting-info">
-            <div class="sport-setting-name">${sport.name}</div>
-            <div class="sport-setting-status ${isOpen ? 'open' : 'closed'}" id="status-${sport.name}">
-              ${isOpen ? 'Open' : 'Closed'}
+    // Fetch dashboard graph visibility settings
+    let showBlockGraph = true;
+    let showSportGraph = true;
+    try {
+      const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
+      if (gvSnap.exists()) {
+        const d = gvSnap.data();
+        showBlockGraph = d.showBlockGraph !== false;
+        showSportGraph = d.showSportGraph !== false;
+      }
+    } catch (e) { /* keep defaults */ }
+
+    container.innerHTML =
+      SPORTS.map(sport => {
+        const isOpen = settings[sport.name]?.registrationOpen !== false;
+        return `
+          <div class="sport-setting-row">
+            <span style="font-size:22px">${sport.emoji}</span>
+            <div class="sport-setting-info">
+              <div class="sport-setting-name">${sport.name}</div>
+              <div class="sport-setting-status ${isOpen ? 'open' : 'closed'}" id="status-${sport.name}">
+                ${isOpen ? 'Open' : 'Closed'}
+              </div>
             </div>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" ${isOpen ? 'checked' : ''}
-              onchange="toggleSportRegistration('${sport.name}', this.checked, this)"/>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>`;
-    }).join('');
+            <label class="toggle-switch">
+              <input type="checkbox" ${isOpen ? 'checked' : ''}
+                onchange="toggleSportRegistration('${sport.name}', this.checked, this)"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>`;
+      }).join('') +
+      `<div class="admin-section-title" style="margin-top:24px;margin-bottom:4px">📊 Dashboard Graph Visibility</div>
+       <div class="sport-setting-row">
+         <span style="font-size:22px">📊</span>
+         <div class="sport-setting-info">
+           <div class="sport-setting-name">Registrations by Block</div>
+           <div class="sport-setting-status ${showBlockGraph ? 'open' : 'closed'}" id="status-blockGraph">
+             ${showBlockGraph ? 'Visible' : 'Hidden'}
+           </div>
+         </div>
+         <label class="toggle-switch">
+           <input type="checkbox" ${showBlockGraph ? 'checked' : ''}
+             onchange="toggleDashboardGraph('showBlockGraph', this.checked, this)"/>
+           <span class="toggle-slider"></span>
+         </label>
+       </div>
+       <div class="sport-setting-row">
+         <span style="font-size:22px">🏅</span>
+         <div class="sport-setting-info">
+           <div class="sport-setting-name">Registrations by Sport</div>
+           <div class="sport-setting-status ${showSportGraph ? 'open' : 'closed'}" id="status-sportGraph">
+             ${showSportGraph ? 'Visible' : 'Hidden'}
+           </div>
+         </div>
+         <label class="toggle-switch">
+           <input type="checkbox" ${showSportGraph ? 'checked' : ''}
+             onchange="toggleDashboardGraph('showSportGraph', this.checked, this)"/>
+           <span class="toggle-slider"></span>
+         </label>
+       </div>`;
   } catch (err) {
     console.error(err);
     container.innerHTML = '<div class="empty-state">Could not load sport settings.</div>';
@@ -1881,6 +1954,24 @@ async function toggleSportRegistration(sportName, newValue, checkbox) {
     console.error(err);
     showToast('Could not update. Try again.', true);
     if (checkbox) checkbox.checked = !newValue; // revert toggle
+  }
+}
+
+async function toggleDashboardGraph(field, newValue, checkbox) {
+  const labels   = { showBlockGraph: 'Block Graph', showSportGraph: 'Sport Graph' };
+  const statusId = field === 'showBlockGraph' ? 'status-blockGraph' : 'status-sportGraph';
+  const statusEl = document.getElementById(statusId);
+  if (statusEl) {
+    statusEl.textContent = newValue ? 'Visible' : 'Hidden';
+    statusEl.className   = `sport-setting-status ${newValue ? 'open' : 'closed'}`;
+  }
+  try {
+    await setDoc(doc(db, 'config', 'dashboardSettings'), { [field]: newValue }, { merge: true });
+    showToast(`${labels[field]} ${newValue ? 'shown' : 'hidden'} on dashboard`);
+  } catch (err) {
+    console.error(err);
+    showToast('Could not update. Try again.', true);
+    if (checkbox) checkbox.checked = !newValue;
   }
 }
 
@@ -2919,6 +3010,7 @@ window.saveUserRole            = saveUserRole;
 window.openAdminSection        = openAdminSection;
 window.closeAdminSection       = closeAdminSection;
 window.toggleSportRegistration = toggleSportRegistration;
+window.toggleDashboardGraph    = toggleDashboardGraph;
 window.toggleSportEditCard     = toggleSportEditCard;
 window.saveSportDetails        = saveSportDetails;
 window.postAnnouncement        = postAnnouncement;
