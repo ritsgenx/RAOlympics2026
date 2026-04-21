@@ -401,7 +401,7 @@ let quizProgressDocExists = false;
 // ── Dashboard cache ──
 let dashboardCache = null;
 let dashboardCacheTime = 0;
-let graphVisibility = { showBlockGraph: true, showSportGraph: true };
+let graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true };
 const DASHBOARD_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // ── PIC participant filter state ──
@@ -569,7 +569,7 @@ async function saveProfile() {
   }
 }
 
-function enterApp() {
+async function enterApp() {
   document.getElementById('greeting-name').textContent =
     `Hi, ${userProfile.name.split(' ')[0]}! 👋`;
   // Admin phone without verified PIN → show PIN screen first
@@ -579,6 +579,11 @@ function enterApp() {
     showScreen('screen-admin-pin');
     return;
   }
+  // Load quiz tab visibility before rendering tab bar
+  try {
+    const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
+    if (gvSnap.exists()) graphVisibility.showQuizTab = gvSnap.data().showQuizTab !== false;
+  } catch (e) { /* keep default true */ }
   renderTabBar();
   switchTab('home');
 }
@@ -634,11 +639,11 @@ function renderTabBar() {
       <span class="tab-dot"></span>
       <span class="tab-label">Dashboard</span>
     </div>
-    <div class="tab-item" data-tab="quiz" onclick="switchTab('quiz')">
+    ${isAdmin() || graphVisibility.showQuizTab ? `<div class="tab-item" data-tab="quiz" onclick="switchTab('quiz')">
       <span class="tab-icon">🧠</span>
       <span class="tab-dot"></span>
       <span class="tab-label">Quiz</span>
-    </div>
+    </div>` : ''}
     <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
       <div class="tab-icon-wrap">
         <span class="tab-icon">📋</span>
@@ -1258,11 +1263,12 @@ async function loadDashboard() {
       const d = gvSnap.data();
       graphVisibility.showBlockGraph = d.showBlockGraph !== false;
       graphVisibility.showSportGraph = d.showSportGraph !== false;
+      graphVisibility.showQuizTab    = d.showQuizTab !== false;
     } else {
-      graphVisibility = { showBlockGraph: true, showSportGraph: true };
+      graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true };
     }
   } catch (e) {
-    graphVisibility = { showBlockGraph: true, showSportGraph: true };
+    graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true };
   }
 
   // PIC / Admin personalised greeting
@@ -1877,12 +1883,14 @@ async function loadManageSports() {
     // Fetch dashboard graph visibility settings
     let showBlockGraph = true;
     let showSportGraph = true;
+    let showQuizTab    = true;
     try {
       const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
       if (gvSnap.exists()) {
         const d = gvSnap.data();
         showBlockGraph = d.showBlockGraph !== false;
         showSportGraph = d.showSportGraph !== false;
+        showQuizTab    = d.showQuizTab !== false;
       }
     } catch (e) { /* keep defaults */ }
 
@@ -1933,6 +1941,20 @@ async function loadManageSports() {
              onchange="toggleDashboardGraph('showSportGraph', this.checked, this)"/>
            <span class="toggle-slider"></span>
          </label>
+       </div>
+       <div class="sport-setting-row">
+         <span style="font-size:22px">🧠</span>
+         <div class="sport-setting-info">
+           <div class="sport-setting-name">Sports Quiz Tab</div>
+           <div class="sport-setting-status ${showQuizTab ? 'open' : 'closed'}" id="status-quizTab">
+             ${showQuizTab ? 'Visible' : 'Hidden'}
+           </div>
+         </div>
+         <label class="toggle-switch">
+           <input type="checkbox" ${showQuizTab ? 'checked' : ''}
+             onchange="toggleDashboardGraph('showQuizTab', this.checked, this)"/>
+           <span class="toggle-slider"></span>
+         </label>
        </div>`;
   } catch (err) {
     console.error(err);
@@ -1958,16 +1980,18 @@ async function toggleSportRegistration(sportName, newValue, checkbox) {
 }
 
 async function toggleDashboardGraph(field, newValue, checkbox) {
-  const labels   = { showBlockGraph: 'Block Graph', showSportGraph: 'Sport Graph' };
-  const statusId = field === 'showBlockGraph' ? 'status-blockGraph' : 'status-sportGraph';
-  const statusEl = document.getElementById(statusId);
+  const labels   = { showBlockGraph: 'Block Graph', showSportGraph: 'Sport Graph', showQuizTab: 'Quiz Tab' };
+  const statusIds = { showBlockGraph: 'status-blockGraph', showSportGraph: 'status-sportGraph', showQuizTab: 'status-quizTab' };
+  const statusEl = document.getElementById(statusIds[field]);
   if (statusEl) {
     statusEl.textContent = newValue ? 'Visible' : 'Hidden';
     statusEl.className   = `sport-setting-status ${newValue ? 'open' : 'closed'}`;
   }
   try {
     await setDoc(doc(db, 'config', 'dashboardSettings'), { [field]: newValue }, { merge: true });
-    showToast(`${labels[field]} ${newValue ? 'shown' : 'hidden'} on dashboard`);
+    graphVisibility[field] = newValue;
+    if (field === 'showQuizTab') renderTabBar();
+    showToast(`${labels[field]} ${newValue ? 'shown' : 'hidden'}`);
   } catch (err) {
     console.error(err);
     showToast('Could not update. Try again.', true);
