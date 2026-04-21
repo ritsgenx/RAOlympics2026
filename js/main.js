@@ -2272,6 +2272,20 @@ function renderAllRegs(regs) {
 // ── Admin panel ──
 let _adminAllUsers = [];
 
+function sortUsersByFlat(users) {
+  return [...users].sort((a, b) => {
+    const parseFlat = flat => {
+      if (!flat) return { block: '\xFF', num: Infinity };
+      const m = flat.match(/^([A-Za-z])-(\d+)$/);
+      if (!m) return { block: flat.charAt(0).toUpperCase() || '\xFF', num: Infinity };
+      return { block: m[1].toUpperCase(), num: parseInt(m[2], 10) };
+    };
+    const fa = parseFlat(a.flat), fb = parseFlat(b.flat);
+    if (fa.block !== fb.block) return fa.block < fb.block ? -1 : 1;
+    return fa.num - fb.num;
+  });
+}
+
 async function loadAdminPanel() {
   const listEl = document.getElementById('admin-user-list');
   listEl.innerHTML = '<div class="empty-state">Loading…</div>';
@@ -2286,7 +2300,7 @@ async function loadAdminPanel() {
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'registrations'))
     ]);
-    _adminAllUsers = usersSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+    _adminAllUsers = sortUsersByFlat(usersSnap.docs.map(d => ({ docId: d.id, ...d.data() })));
     const totalPics = _adminAllUsers.filter(u => u.role === 'pic').length;
 
     document.getElementById('admin-stat-users').textContent = _adminAllUsers.length;
@@ -2302,8 +2316,8 @@ async function loadAdminPanel() {
 function filterAdminUsers() {
   const q = (document.getElementById('admin-search').value || '').trim().toLowerCase();
   const filtered = q
-    ? _adminAllUsers.filter(u =>
-        (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q))
+    ? sortUsersByFlat(_adminAllUsers.filter(u =>
+        (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q)))
     : _adminAllUsers;
   renderAdminUserList(filtered);
 }
