@@ -2342,6 +2342,7 @@ function renderAdminUserList(users) {
           <div>
             <div class="user-card-name">${u.name || '—'}</div>
             <div class="user-card-sub">${u.phone ? makeWhatsAppLink(u.phone, u.phone, 'small') : '—'} · Flat ${u.flat || '—'}</div>
+            ${u.createdAt ? `<div class="user-card-sub" style="font-size:11px;color:var(--text3);margin-top:2px">Joined: ${formatTimestamp(u.createdAt)}</div>` : ''}
             ${picTags}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
