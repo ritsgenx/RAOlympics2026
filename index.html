@@ -272,6 +272,31 @@
             <div class="flat-hint">Enter flat number only (e.g. 1104, 304, 201)</div>
           </div>
         </div>
+        <!-- Open Mic specific fields — shown only for Open Mic sport -->
+        <div id="openmic-fields" style="display:none;">
+          <div class="form-group">
+            <label>Type of Act</label>
+            <input type="text" id="f-act-type" placeholder="e.g. Singing, Poetry, Storytelling…" autocomplete="off"/>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <div class="radio-group">
+              <label class="radio-opt"><input type="radio" name="openmic-category" value="Solo"/> Solo</label>
+              <label class="radio-opt"><input type="radio" name="openmic-category" value="Group"/> Group</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Will you be performing with any instrument?</label>
+            <div class="radio-group">
+              <label class="radio-opt"><input type="radio" name="openmic-instrument" value="Yes"/> Yes</label>
+              <label class="radio-opt"><input type="radio" name="openmic-instrument" value="No"/> No</label>
+            </div>
+          </div>
+          <div class="form-group" id="instrument-name-section" style="display:none;">
+            <label>Instrument Name</label>
+            <input type="text" id="f-instrument-name" placeholder="e.g. Guitar, Tabla, Flute…" autocomplete="off"/>
+          </div>
+        </div>
         <div class="phone-display">
           <span class="phone-label">Registering from</span>
           <span class="phone-value" id="form-phone-display"></span>

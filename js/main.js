@@ -450,6 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('input[name="gender"]').forEach(r => {
     r.addEventListener('change', updatePartnerGender);
   });
+
+  // Show/hide instrument name field when instrument radio changes
+  document.querySelectorAll('input[name="openmic-instrument"]').forEach(r => {
+    r.addEventListener('change', () => toggleInstrumentName(r.value));
+  });
 });
 
 function updatePartnerGender() {
@@ -927,7 +932,23 @@ function openRegistrationForm(sport) {
   const needsPartner = currentSubcategory === 'Doubles' || currentSubcategory === 'Mixed Doubles';
   document.getElementById('partner-section').style.display = needsPartner ? 'block' : 'none';
 
+  // Open Mic specific fields
+  const isOpenMic = sport.name === 'Open Mic';
+  document.getElementById('openmic-fields').style.display = isOpenMic ? 'block' : 'none';
+  if (isOpenMic) {
+    document.getElementById('f-act-type').value = '';
+    document.querySelectorAll('input[name="openmic-category"]').forEach(r => r.checked = false);
+    document.querySelectorAll('input[name="openmic-instrument"]').forEach(r => r.checked = false);
+    document.getElementById('instrument-name-section').style.display = 'none';
+    document.getElementById('f-instrument-name').value = '';
+  }
+
   showScreen('screen-form');
+}
+
+function toggleInstrumentName(value) {
+  document.getElementById('instrument-name-section').style.display = value === 'Yes' ? 'block' : 'none';
+  if (value === 'No') document.getElementById('f-instrument-name').value = '';
 }
 
 async function submitRegistration() {
@@ -942,6 +963,21 @@ async function submitRegistration() {
   if (ageCategory === 'Under 18' && !grade) return showToast('Please select grade', true);
   if (!gender)      return showToast('Please select gender', true);
   if (!regtype)     return showToast('Please select registrant type', true);
+
+  // Open Mic specific validation
+  const isOpenMic = currentSport.name === 'Open Mic';
+  let actType = null, openMicCategory = null, withInstrument = null, instrumentName = null;
+  if (isOpenMic) {
+    actType          = document.getElementById('f-act-type').value.trim();
+    openMicCategory  = document.querySelector('input[name="openmic-category"]:checked')?.value || null;
+    withInstrument   = document.querySelector('input[name="openmic-instrument"]:checked')?.value || null;
+    instrumentName   = document.getElementById('f-instrument-name').value.trim() || null;
+    if (!actType)         return showToast('Please enter your type of act', true);
+    if (!openMicCategory) return showToast('Please select Solo or Group', true);
+    if (!withInstrument)  return showToast('Please select whether you will perform with an instrument', true);
+    if (withInstrument === 'Yes' && !instrumentName) return showToast('Please enter the instrument name', true);
+    if (withInstrument === 'No') instrumentName = null;
+  }
 
   // Partner fields (only when section is visible)
   const partnerVisible = document.getElementById('partner-section').style.display !== 'none';
@@ -999,6 +1035,10 @@ async function submitRegistration() {
       partnerBlock:  partnerBlock  || null,
       partnerFlatNum: partnerFlatNum || null,
       partnerFlat:   partnerFlatFull || null,
+      actType:        actType        || null,
+      openMicCategory: openMicCategory || null,
+      withInstrument:  withInstrument  || null,
+      instrumentName:  instrumentName  || null,
       registeredAt:  serverTimestamp()
     });
 
@@ -1123,6 +1163,9 @@ async function loadRegistrations() {
             ${d.gender ? `<span class="reg-tag">${d.gender}</span>` : ''}
             <span class="reg-tag ${cls}">${d.regtype}</span>
             <span class="reg-tag">Flat ${d.flat}</span>
+            ${d.actType ? `<span class="reg-tag">🎤 ${d.actType}</span>` : ''}
+            ${d.openMicCategory ? `<span class="reg-tag">${d.openMicCategory}</span>` : ''}
+            ${d.withInstrument ? `<span class="reg-tag">🎵 ${d.withInstrument === 'Yes' ? (d.instrumentName || 'With Instrument') : 'No Instrument'}</span>` : ''}
             ${partnerTag}
           </div>
         </div>
@@ -1681,6 +1724,9 @@ function renderParticipantCards(list) {
         <span class="reg-detail-tag phone">${d.phone ? makeWhatsAppLink(d.phone, d.phone, 'small') : '—'}</span>
         ${d.subcategory ? `<span class="reg-detail-tag">${d.subcategory}</span>` : ''}
         ${d.regtype     ? `<span class="reg-detail-tag">${d.regtype}</span>`     : ''}
+        ${d.actType        ? `<span class="reg-detail-tag">🎤 ${d.actType}</span>` : ''}
+        ${d.openMicCategory ? `<span class="reg-detail-tag">${d.openMicCategory}</span>` : ''}
+        ${d.withInstrument  ? `<span class="reg-detail-tag">🎵 ${d.withInstrument === 'Yes' ? (d.instrumentName || 'With Instrument') : 'No Instrument'}</span>` : ''}
       </div>
     </div>`).join('');
 }
@@ -2196,12 +2242,15 @@ async function exportCSV(sportFilter) {
     if (snap.empty) { showToast('No registrations found', true); return; }
 
     const headers = ['Sport','Name','Age Category','Grade','Gender','Registrant Type','Phone','Flat',
-                     'Subcategory','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No','Registered At'];
+                     'Subcategory','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No',
+                     'Act Type','Category (Solo/Group)','With Instrument','Instrument Name',
+                     'Registered At'];
     const rows = snap.docs.map(d => {
       const r = d.data();
       return [r.sport, r.name, r.ageCategory || '', r.grade || '', r.gender, r.regtype, r.phone, r.flat,
               r.subcategory || '', r.partnerName || '', r.partnerPhone || '',
               r.partnerGender || '', r.partnerBlock || '', r.partnerFlatNum || r.partnerFlat || '',
+              r.actType || '', r.openMicCategory || '', r.withInstrument || '', r.instrumentName || '',
               formatTimestamp(r.registeredAt)].map(escapeCsvVal);
     });
 
@@ -2680,7 +2729,7 @@ function downloadParticipants(format, scope) {
 }
 
 function downloadCSV(data, filename) {
-  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No'];
+  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No','Act Type','Category (Solo/Group)','With Instrument','Instrument Name'];
   const esc = val => {
     if (!val && val !== 0) return '';
     const s = String(val);
@@ -2690,7 +2739,8 @@ function downloadCSV(data, filename) {
     esc(p.name), esc(p.gender), esc(p.ageCategory || ''), esc(p.grade || ''),
     esc(p.subcategory || ''), esc(p.regtype || ''), esc(p.flat),
     esc(p.phone), esc(p.partnerName || ''), esc(p.partnerPhone || ''),
-    esc(p.partnerGender || ''), esc(p.partnerBlock || ''), esc(p.partnerFlatNum || p.partnerFlat || '')
+    esc(p.partnerGender || ''), esc(p.partnerBlock || ''), esc(p.partnerFlatNum || p.partnerFlat || ''),
+    esc(p.actType || ''), esc(p.openMicCategory || ''), esc(p.withInstrument || ''), esc(p.instrumentName || '')
   ].join(','));
   triggerDownload([headers.join(','), ...rows].join('\n'), filename + '.csv', 'text/csv');
   showToast(`Downloading ${data.length} records as CSV`);
@@ -2718,6 +2768,9 @@ function downloadTXT(data, filename, sport, date) {
         : (p.partnerFlat || '-');
       lines.push(`   Partner Flat: ${pFlat}`);
     }
+    if (p.actType)         lines.push(`   Act Type: ${p.actType}`);
+    if (p.openMicCategory) lines.push(`   Solo/Group: ${p.openMicCategory}`);
+    if (p.withInstrument)  lines.push(`   With Instrument: ${p.withInstrument}${p.instrumentName ? ' (' + p.instrumentName + ')' : ''}`);
     lines.push('');
   });
   lines.push('─'.repeat(50));
@@ -2727,6 +2780,7 @@ function downloadTXT(data, filename, sport, date) {
 }
 
 function downloadPDF(data, filename, sport, date) {
+  const isOpenMic = data.some(p => p.actType || p.openMicCategory || p.withInstrument);
   const rows = data.map((p, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -2737,7 +2791,9 @@ function downloadPDF(data, filename, sport, date) {
       <td>${p.regtype || ''}</td>
       <td>${p.flat || ''}</td>
       <td>${p.partnerName ? p.partnerName + '<br/><small>' + (p.partnerBlock ? 'Blk ' + p.partnerBlock + ' · ' : '') + (p.partnerFlatNum || p.partnerFlat || '') + '</small>' : '-'}</td>
+      ${isOpenMic ? `<td>${p.actType || '-'}</td><td>${p.openMicCategory || '-'}</td><td>${p.withInstrument || '-'}${p.instrumentName ? '<br/><small>' + p.instrumentName + '</small>' : ''}</td>` : ''}
     </tr>`).join('');
+  const openMicHeaders = isOpenMic ? '<th>Act Type</th><th>Solo/Group</th><th>Instrument</th>' : '';
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>
 <title>${sport} Participants</title>
@@ -2757,7 +2813,7 @@ function downloadPDF(data, filename, sport, date) {
   <h1>🏆 ${sport} — Participant List</h1>
   <div class="meta">Generated: ${date} &nbsp;·&nbsp; Total: ${data.length} participants &nbsp;·&nbsp; RA Olympics 2026</div>
   <table>
-    <thead><tr><th>#</th><th>Name</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th></tr></thead>
+    <thead><tr><th>#</th><th>Name</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th>${openMicHeaders}</tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="footer">RA Olympics 2026 · Generated by Sports Registration App</div>
