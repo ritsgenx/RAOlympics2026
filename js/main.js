@@ -211,12 +211,12 @@ const SPORTS = [
     ]
   },
   {
-    name: "Kids Event (Under 5 years)", emoji: "🎈",
+    name: "Kids Event (Under 6 years)", emoji: "🎈",
     subcategories:   [],
     datetime:        "TBD",
     venue:           "Apartment Garden / Ground",
     maxParticipants: "Unlimited (all kids welcome)",
-    ageGroup:        "5 to 14 years",
+    ageGroup:        "0 to 6 years",
     contact:         "TBD",
     rules: [
       "Events: Sack race, Lemon & spoon, Tug of war",
@@ -401,7 +401,7 @@ let quizProgressDocExists = false;
 // ── Dashboard cache ──
 let dashboardCache = null;
 let dashboardCacheTime = 0;
-let graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true };
+let graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true, showCarromTile: true };
 const DASHBOARD_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // ── PIC participant filter state ──
@@ -627,11 +627,16 @@ async function enterApp() {
     showScreen('screen-admin-pin');
     return;
   }
-  // Load quiz tab visibility before rendering tab bar
+  // Load visibility settings before rendering tab bar and grid
   try {
     const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
-    if (gvSnap.exists()) graphVisibility.showQuizTab = gvSnap.data().showQuizTab !== false;
-  } catch (e) { /* keep default true */ }
+    if (gvSnap.exists()) {
+      const d = gvSnap.data();
+      graphVisibility.showQuizTab    = d.showQuizTab    !== false;
+      graphVisibility.showCarromTile = d.showCarromTile !== false;
+    }
+  } catch (e) { /* keep defaults */ }
+  buildSportsGrid();
   renderTabBar();
   switchTab('home');
 }
@@ -769,7 +774,9 @@ function makeWhatsAppLink(phone, displayText, extraClass) {
 // ── Sports grid ──
 function buildSportsGrid() {
   const grid = document.getElementById('sports-grid');
+  grid.innerHTML = '';
   SPORTS.forEach(sport => {
+    if (sport.name === 'Carrom' && !graphVisibility.showCarromTile && !isAdmin()) return;
     const tile = document.createElement('div');
     tile.className = 'sport-tile';
     tile.innerHTML = `
@@ -1374,14 +1381,15 @@ async function loadDashboard() {
     const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
     if (gvSnap.exists()) {
       const d = gvSnap.data();
-      graphVisibility.showBlockGraph = d.showBlockGraph !== false;
-      graphVisibility.showSportGraph = d.showSportGraph !== false;
-      graphVisibility.showQuizTab    = d.showQuizTab !== false;
+      graphVisibility.showBlockGraph  = d.showBlockGraph  !== false;
+      graphVisibility.showSportGraph  = d.showSportGraph  !== false;
+      graphVisibility.showQuizTab     = d.showQuizTab     !== false;
+      graphVisibility.showCarromTile  = d.showCarromTile  !== false;
     } else {
-      graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true };
+      graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true, showCarromTile: true };
     }
   } catch (e) {
-    graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true };
+    graphVisibility = { showBlockGraph: true, showSportGraph: true, showQuizTab: true, showCarromTile: true };
   }
 
   // PIC / Admin personalised greeting
@@ -1998,16 +2006,18 @@ async function loadManageSports() {
     snap.docs.forEach(d => { settings[d.id] = d.data(); });
 
     // Fetch dashboard graph visibility settings
-    let showBlockGraph = true;
-    let showSportGraph = true;
-    let showQuizTab    = true;
+    let showBlockGraph  = true;
+    let showSportGraph  = true;
+    let showQuizTab     = true;
+    let showCarromTile  = true;
     try {
       const gvSnap = await getDoc(doc(db, 'config', 'dashboardSettings'));
       if (gvSnap.exists()) {
         const d = gvSnap.data();
-        showBlockGraph = d.showBlockGraph !== false;
-        showSportGraph = d.showSportGraph !== false;
-        showQuizTab    = d.showQuizTab !== false;
+        showBlockGraph  = d.showBlockGraph  !== false;
+        showSportGraph  = d.showSportGraph  !== false;
+        showQuizTab     = d.showQuizTab     !== false;
+        showCarromTile  = d.showCarromTile  !== false;
       }
     } catch (e) { /* keep defaults */ }
 
@@ -2072,6 +2082,20 @@ async function loadManageSports() {
              onchange="toggleDashboardGraph('showQuizTab', this.checked, this)"/>
            <span class="toggle-slider"></span>
          </label>
+       </div>
+       <div class="sport-setting-row">
+         <span style="font-size:22px">🟫</span>
+         <div class="sport-setting-info">
+           <div class="sport-setting-name">Carrom Tile (Home Screen)</div>
+           <div class="sport-setting-status ${showCarromTile ? 'open' : 'closed'}" id="status-carromTile">
+             ${showCarromTile ? 'Visible' : 'Hidden'}
+           </div>
+         </div>
+         <label class="toggle-switch">
+           <input type="checkbox" ${showCarromTile ? 'checked' : ''}
+             onchange="toggleDashboardGraph('showCarromTile', this.checked, this)"/>
+           <span class="toggle-slider"></span>
+         </label>
        </div>`;
   } catch (err) {
     console.error(err);
@@ -2097,8 +2121,8 @@ async function toggleSportRegistration(sportName, newValue, checkbox) {
 }
 
 async function toggleDashboardGraph(field, newValue, checkbox) {
-  const labels   = { showBlockGraph: 'Block Graph', showSportGraph: 'Sport Graph', showQuizTab: 'Quiz Tab' };
-  const statusIds = { showBlockGraph: 'status-blockGraph', showSportGraph: 'status-sportGraph', showQuizTab: 'status-quizTab' };
+  const labels    = { showBlockGraph: 'Block Graph', showSportGraph: 'Sport Graph', showQuizTab: 'Quiz Tab', showCarromTile: 'Carrom Tile' };
+  const statusIds = { showBlockGraph: 'status-blockGraph', showSportGraph: 'status-sportGraph', showQuizTab: 'status-quizTab', showCarromTile: 'status-carromTile' };
   const statusEl = document.getElementById(statusIds[field]);
   if (statusEl) {
     statusEl.textContent = newValue ? 'Visible' : 'Hidden';
@@ -2107,7 +2131,8 @@ async function toggleDashboardGraph(field, newValue, checkbox) {
   try {
     await setDoc(doc(db, 'config', 'dashboardSettings'), { [field]: newValue }, { merge: true });
     graphVisibility[field] = newValue;
-    if (field === 'showQuizTab') renderTabBar();
+    if (field === 'showQuizTab')    renderTabBar();
+    if (field === 'showCarromTile') buildSportsGrid();
     showToast(`${labels[field]} ${newValue ? 'shown' : 'hidden'}`);
   } catch (err) {
     console.error(err);
