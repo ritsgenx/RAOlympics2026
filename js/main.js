@@ -1232,6 +1232,7 @@ async function loadRegistrations() {
         <div class="reg-card-icon">${d.sportEmoji || '🏆'}</div>
         <div class="reg-card-info">
           <div class="reg-card-sport">${sportLabel}</div>
+          ${d.registeredAt ? `<div style="font-size:11px;color:var(--text3);margin-bottom:4px">🕐 ${formatTimestamp(d.registeredAt)}</div>` : ''}
           <div class="reg-card-details">
             <span class="reg-tag">${d.name}</span>
             ${d.ageCategory ? `<span class="reg-tag">${d.ageCategory}</span>` : (d.age ? `<span class="reg-tag">Age ${d.age}</span>` : '')}
@@ -1740,7 +1741,11 @@ async function openPicSportDetail(sportName) {
     const snap = await getDocs(
       query(collection(db, 'registrations'), where('sport', '==', sportName))
     );
-    const regs = snap.docs.map(d => d.data());
+    const regs = snap.docs.map(d => d.data()).sort((a, b) => {
+      const tsA = a.registeredAt?.seconds ?? 0;
+      const tsB = b.registeredAt?.seconds ?? 0;
+      return tsA - tsB;
+    });
 
     if (!regs.length) {
       listEl.innerHTML = '<div class="empty-state">No registrations yet for this sport.</div>';
@@ -1792,6 +1797,7 @@ function renderParticipantCards(list) {
   listEl.innerHTML = list.map(d => `
     <div class="reg-detail-card${d.isPartnerEntry ? ' partner-entry-card' : ''}">
       <div class="reg-detail-name">${d.name || '—'}${d.isPartnerEntry ? ' <span class="reg-detail-tag partner-entry" style="font-size:10px;vertical-align:middle">👥 Partner Entry</span>' : ''}</div>
+      ${d.registeredAt ? `<div style="font-size:11px;color:var(--text3);margin-bottom:4px">🕐 ${formatTimestamp(d.registeredAt)}</div>` : ''}
       <div class="reg-detail-tags">
         ${d.isPartnerEntry
           ? `<span class="reg-detail-tag partner-entry">Added by ${d.partnerOfName || '—'}</span>`
@@ -2827,7 +2833,7 @@ function downloadParticipants(format, scope) {
 }
 
 function downloadCSV(data, filename) {
-  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No','Act Type','Category (Solo/Group)','With Instrument','Instrument Name','Track Events'];
+  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No','Act Type','Category (Solo/Group)','With Instrument','Instrument Name','Track Events','Registered At'];
   const esc = val => {
     if (!val && val !== 0) return '';
     const s = String(val);
@@ -2839,7 +2845,8 @@ function downloadCSV(data, filename) {
     esc(p.phone), esc(p.partnerName || ''), esc(p.partnerPhone || ''),
     esc(p.partnerGender || ''), esc(p.partnerBlock || ''), esc(p.partnerFlatNum || p.partnerFlat || ''),
     esc(p.actType || ''), esc(p.openMicCategory || ''), esc(p.withInstrument || ''), esc(p.instrumentName || ''),
-    esc(Array.isArray(p.trackEvents) ? p.trackEvents.join(' | ') : (p.trackEvents || ''))
+    esc(Array.isArray(p.trackEvents) ? p.trackEvents.join(' | ') : (p.trackEvents || '')),
+    esc(formatTimestamp(p.registeredAt))
   ].join(','));
   triggerDownload([headers.join(','), ...rows].join('\n'), filename + '.csv', 'text/csv');
   showToast(`Downloading ${data.length} records as CSV`);
@@ -2872,6 +2879,7 @@ function downloadTXT(data, filename, sport, date) {
     if (p.openMicCategory) lines.push(`   Solo/Group: ${p.openMicCategory}`);
     if (p.withInstrument)  lines.push(`   With Instrument: ${p.withInstrument}${p.instrumentName ? ' (' + p.instrumentName + ')' : ''}`);
     if (p.trackEvents?.length) lines.push(`   Track Events: ${p.trackEvents.join(', ')}`);
+    if (p.registeredAt)    lines.push(`   Registered: ${formatTimestamp(p.registeredAt)}`);
     lines.push('');
   });
   lines.push('─'.repeat(50));
@@ -2896,6 +2904,7 @@ function downloadPDF(data, filename, sport, date) {
       <td>${p.partnerName ? p.partnerName + '<br/><small>' + (p.partnerBlock ? 'Blk ' + p.partnerBlock + ' · ' : '') + (p.partnerFlatNum || p.partnerFlat || '') + '</small>' : '-'}</td>
       ${isOpenMic    ? `<td>${p.actType || '-'}</td><td>${p.openMicCategory || '-'}</td><td>${p.withInstrument || '-'}${p.instrumentName ? '<br/><small>' + p.instrumentName + '</small>' : ''}</td>` : ''}
       ${isTrackEvent ? `<td>${Array.isArray(p.trackEvents) ? p.trackEvents.join('<br/>') : '-'}</td>` : ''}
+      <td>${formatTimestamp(p.registeredAt) || '-'}</td>
     </tr>`).join('');
   const openMicHeaders  = isOpenMic    ? '<th>Act Type</th><th>Solo/Group</th><th>Instrument</th>' : '';
   const trackEvHeaders  = isTrackEvent ? '<th>Track Events</th>' : '';
@@ -2918,7 +2927,7 @@ function downloadPDF(data, filename, sport, date) {
   <h1>🏆 ${sport} — Participant List</h1>
   <div class="meta">Generated: ${date} &nbsp;·&nbsp; Total: ${data.length} participants &nbsp;·&nbsp; RA Olympics 2026</div>
   <table>
-    <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th>${openMicHeaders}${trackEvHeaders}</tr></thead>
+    <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th>${openMicHeaders}${trackEvHeaders}<th>Registered At</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="footer">RA Olympics 2026 · Generated by Sports Registration App</div>
