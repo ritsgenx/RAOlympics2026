@@ -435,6 +435,43 @@ const SUBCATEGORY_ICONS = {
 const BLOCKS       = ['A', 'B', 'C', 'D', 'E'];
 const BLOCK_COLORS = ['#0080ff', '#ff6a00', '#00e5a0', '#c84bff', '#f1c40f'];
 
+// ── Track Events sub-event mapping ──
+const TRACK_EVENTS_MAP = {
+  '18+':            ['100m', '3KM Run', 'Fun Race', 'Relay Race'],
+  'Senior Citizen': ['Fast Walking / Slow Jogging', '1 Minute Games', '3KM Run'],
+  'under18-1-3':    ['100m Race', '3KM Race', 'One Leg Hop Race', 'Fun Race'],
+  'under18-4-6':    ['100m Race', '3KM Race', 'Book Balancing', 'Slow Cycling'],
+  'under18-7-12':   ['100m Race', '3KM Race', 'Rope Skipping', 'Slow Cycling'],
+};
+const TRACK_GRADES_1_3 = ['Pre-Nursery','Nursery','KG-1','KG-2','1st Grade','2nd Grade','3rd Grade'];
+const TRACK_GRADES_4_6 = ['4th Grade','5th Grade','6th Grade'];
+
+function getTrackEventsForCategory(ageCategory, grade) {
+  if (ageCategory === '18+')            return TRACK_EVENTS_MAP['18+'];
+  if (ageCategory === 'Senior Citizen') return TRACK_EVENTS_MAP['Senior Citizen'];
+  if (ageCategory === 'Under 18' && grade) {
+    if (TRACK_GRADES_1_3.includes(grade)) return TRACK_EVENTS_MAP['under18-1-3'];
+    if (TRACK_GRADES_4_6.includes(grade)) return TRACK_EVENTS_MAP['under18-4-6'];
+    return TRACK_EVENTS_MAP['under18-7-12'];
+  }
+  return null;
+}
+
+function updateTrackEventsList() {
+  if (!currentSport || currentSport.name !== 'Track Events') return;
+  const grade  = document.getElementById('f-grade')?.value || null;
+  const events = getTrackEventsForCategory(currentAgeCategory, grade);
+  const section = document.getElementById('track-events-section');
+  const list    = document.getElementById('track-events-list');
+  if (!events) { section.style.display = 'none'; list.innerHTML = ''; return; }
+  section.style.display = 'block';
+  list.innerHTML = events.map(e =>
+    `<label class="track-event-opt">
+      <input type="checkbox" name="track-event" value="${e}"/> ${e}
+    </label>`
+  ).join('');
+}
+
 // ── Init on page load ──
 document.addEventListener('DOMContentLoaded', () => {
   buildSportsGrid();
@@ -454,6 +491,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show/hide instrument name field when instrument radio changes
   document.querySelectorAll('input[name="openmic-instrument"]').forEach(r => {
     r.addEventListener('change', () => toggleInstrumentName(r.value));
+  });
+
+  // Update track event options when grade changes (Track Events — Under 18)
+  const gradeSelect = document.getElementById('f-grade');
+  if (gradeSelect) gradeSelect.addEventListener('change', () => {
+    if (currentSport?.name === 'Track Events') updateTrackEventsList();
   });
 });
 
@@ -901,6 +944,7 @@ function selectAgeCategory(category) {
     pillUnder.classList.add('selected');
     gradeSection.style.display = 'block';
   }
+  updateTrackEventsList();
 }
 
 function openRegistrationForm(sport) {
@@ -942,6 +986,12 @@ function openRegistrationForm(sport) {
   const needsPartner = currentSubcategory === 'Doubles' || currentSubcategory === 'Mixed Doubles';
   document.getElementById('partner-section').style.display = needsPartner ? 'block' : 'none';
 
+  // Reset track events section
+  const trackSection = document.getElementById('track-events-section');
+  const trackList    = document.getElementById('track-events-list');
+  if (trackSection) trackSection.style.display = 'none';
+  if (trackList)    trackList.innerHTML = '';
+
   // Open Mic specific fields
   const isOpenMic = sport.name === 'Open Mic';
   document.getElementById('openmic-fields').style.display = isOpenMic ? 'block' : 'none';
@@ -973,6 +1023,14 @@ async function submitRegistration() {
   if (ageCategory === 'Under 18' && !grade) return showToast('Please select grade', true);
   if (!gender)      return showToast('Please select gender', true);
   if (!regtype)     return showToast('Please select registrant type', true);
+
+  // Track Events sub-event validation
+  const isTrackEvents = currentSport.name === 'Track Events';
+  let selectedTrackEvents = [];
+  if (isTrackEvents) {
+    selectedTrackEvents = Array.from(document.querySelectorAll('input[name="track-event"]:checked')).map(c => c.value);
+    if (selectedTrackEvents.length === 0) return showToast('Please select at least one track event', true);
+  }
 
   // Open Mic specific validation
   const isOpenMic = currentSport.name === 'Open Mic';
@@ -1045,10 +1103,11 @@ async function submitRegistration() {
       partnerBlock:  partnerBlock  || null,
       partnerFlatNum: partnerFlatNum || null,
       partnerFlat:   partnerFlatFull || null,
-      actType:        actType        || null,
+      actType:         actType         || null,
       openMicCategory: openMicCategory || null,
       withInstrument:  withInstrument  || null,
       instrumentName:  instrumentName  || null,
+      trackEvents:     selectedTrackEvents.length ? selectedTrackEvents : null,
       registeredAt:  serverTimestamp()
     });
 
@@ -1176,6 +1235,7 @@ async function loadRegistrations() {
             ${d.actType ? `<span class="reg-tag">🎤 ${d.actType}</span>` : ''}
             ${d.openMicCategory ? `<span class="reg-tag">${d.openMicCategory}</span>` : ''}
             ${d.withInstrument ? `<span class="reg-tag">🎵 ${d.withInstrument === 'Yes' ? (d.instrumentName || 'With Instrument') : 'No Instrument'}</span>` : ''}
+            ${d.trackEvents?.length ? d.trackEvents.map(e => `<span class="reg-tag">🏃 ${e}</span>`).join('') : ''}
             ${partnerTag}
           </div>
         </div>
@@ -1737,6 +1797,7 @@ function renderParticipantCards(list) {
         ${d.actType        ? `<span class="reg-detail-tag">🎤 ${d.actType}</span>` : ''}
         ${d.openMicCategory ? `<span class="reg-detail-tag">${d.openMicCategory}</span>` : ''}
         ${d.withInstrument  ? `<span class="reg-detail-tag">🎵 ${d.withInstrument === 'Yes' ? (d.instrumentName || 'With Instrument') : 'No Instrument'}</span>` : ''}
+        ${d.trackEvents?.length ? d.trackEvents.map(e => `<span class="reg-detail-tag">🏃 ${e}</span>`).join('') : ''}
       </div>
     </div>`).join('');
 }
@@ -2254,14 +2315,15 @@ async function exportCSV(sportFilter) {
     const headers = ['Sport','Name','Age Category','Grade','Gender','Registrant Type','Phone','Flat',
                      'Subcategory','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No',
                      'Act Type','Category (Solo/Group)','With Instrument','Instrument Name',
-                     'Registered At'];
+                     'Track Events','Registered At'];
     const rows = snap.docs.map(d => {
       const r = d.data();
+      const trackEventsStr = Array.isArray(r.trackEvents) ? r.trackEvents.join(' | ') : (r.trackEvents || '');
       return [r.sport, r.name, r.ageCategory || '', r.grade || '', r.gender, r.regtype, r.phone, r.flat,
               r.subcategory || '', r.partnerName || '', r.partnerPhone || '',
               r.partnerGender || '', r.partnerBlock || '', r.partnerFlatNum || r.partnerFlat || '',
               r.actType || '', r.openMicCategory || '', r.withInstrument || '', r.instrumentName || '',
-              formatTimestamp(r.registeredAt)].map(escapeCsvVal);
+              trackEventsStr, formatTimestamp(r.registeredAt)].map(escapeCsvVal);
     });
 
     const csv   = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -2740,7 +2802,7 @@ function downloadParticipants(format, scope) {
 }
 
 function downloadCSV(data, filename) {
-  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No','Act Type','Category (Solo/Group)','With Instrument','Instrument Name'];
+  const headers = ['Name','Gender','Age Category','Grade','Subcategory','Registrant Type','Flat','Phone','Partner Name','Partner Phone','Partner Gender','Partner Block','Partner Flat No','Act Type','Category (Solo/Group)','With Instrument','Instrument Name','Track Events'];
   const esc = val => {
     if (!val && val !== 0) return '';
     const s = String(val);
@@ -2751,7 +2813,8 @@ function downloadCSV(data, filename) {
     esc(p.subcategory || ''), esc(p.regtype || ''), esc(p.flat),
     esc(p.phone), esc(p.partnerName || ''), esc(p.partnerPhone || ''),
     esc(p.partnerGender || ''), esc(p.partnerBlock || ''), esc(p.partnerFlatNum || p.partnerFlat || ''),
-    esc(p.actType || ''), esc(p.openMicCategory || ''), esc(p.withInstrument || ''), esc(p.instrumentName || '')
+    esc(p.actType || ''), esc(p.openMicCategory || ''), esc(p.withInstrument || ''), esc(p.instrumentName || ''),
+    esc(Array.isArray(p.trackEvents) ? p.trackEvents.join(' | ') : (p.trackEvents || ''))
   ].join(','));
   triggerDownload([headers.join(','), ...rows].join('\n'), filename + '.csv', 'text/csv');
   showToast(`Downloading ${data.length} records as CSV`);
@@ -2783,6 +2846,7 @@ function downloadTXT(data, filename, sport, date) {
     if (p.actType)         lines.push(`   Act Type: ${p.actType}`);
     if (p.openMicCategory) lines.push(`   Solo/Group: ${p.openMicCategory}`);
     if (p.withInstrument)  lines.push(`   With Instrument: ${p.withInstrument}${p.instrumentName ? ' (' + p.instrumentName + ')' : ''}`);
+    if (p.trackEvents?.length) lines.push(`   Track Events: ${p.trackEvents.join(', ')}`);
     lines.push('');
   });
   lines.push('─'.repeat(50));
@@ -2792,7 +2856,8 @@ function downloadTXT(data, filename, sport, date) {
 }
 
 function downloadPDF(data, filename, sport, date) {
-  const isOpenMic = data.some(p => p.actType || p.openMicCategory || p.withInstrument);
+  const isOpenMic    = data.some(p => p.actType || p.openMicCategory || p.withInstrument);
+  const isTrackEvent = data.some(p => p.trackEvents?.length);
   const rows = data.map((p, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -2804,9 +2869,11 @@ function downloadPDF(data, filename, sport, date) {
       <td>${p.regtype || ''}</td>
       <td>${p.flat || ''}</td>
       <td>${p.partnerName ? p.partnerName + '<br/><small>' + (p.partnerBlock ? 'Blk ' + p.partnerBlock + ' · ' : '') + (p.partnerFlatNum || p.partnerFlat || '') + '</small>' : '-'}</td>
-      ${isOpenMic ? `<td>${p.actType || '-'}</td><td>${p.openMicCategory || '-'}</td><td>${p.withInstrument || '-'}${p.instrumentName ? '<br/><small>' + p.instrumentName + '</small>' : ''}</td>` : ''}
+      ${isOpenMic    ? `<td>${p.actType || '-'}</td><td>${p.openMicCategory || '-'}</td><td>${p.withInstrument || '-'}${p.instrumentName ? '<br/><small>' + p.instrumentName + '</small>' : ''}</td>` : ''}
+      ${isTrackEvent ? `<td>${Array.isArray(p.trackEvents) ? p.trackEvents.join('<br/>') : '-'}</td>` : ''}
     </tr>`).join('');
-  const openMicHeaders = isOpenMic ? '<th>Act Type</th><th>Solo/Group</th><th>Instrument</th>' : '';
+  const openMicHeaders  = isOpenMic    ? '<th>Act Type</th><th>Solo/Group</th><th>Instrument</th>' : '';
+  const trackEvHeaders  = isTrackEvent ? '<th>Track Events</th>' : '';
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>
 <title>${sport} Participants</title>
@@ -2826,7 +2893,7 @@ function downloadPDF(data, filename, sport, date) {
   <h1>🏆 ${sport} — Participant List</h1>
   <div class="meta">Generated: ${date} &nbsp;·&nbsp; Total: ${data.length} participants &nbsp;·&nbsp; RA Olympics 2026</div>
   <table>
-    <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th>${openMicHeaders}</tr></thead>
+    <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Gender</th><th>Age</th><th>Category</th><th>Type</th><th>Flat</th><th>Partner</th>${openMicHeaders}${trackEvHeaders}</tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="footer">RA Olympics 2026 · Generated by Sports Registration App</div>

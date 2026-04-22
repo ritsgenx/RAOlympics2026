@@ -2565,6 +2565,43 @@ textarea.edit-field-input {
   padding: 30px 20px;
 }
 
+/* ── TRACK EVENTS MULTI-SELECT ── */
+.track-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.track-event-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.track-event-opt:hover {
+  border-color: var(--blue);
+  color: var(--text);
+}
+.track-event-opt input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--blue);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.track-event-opt:has(input:checked) {
+  background: rgba(0,128,255,0.08);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 /* ── AGE CATEGORY TOGGLE PILLS ── */
 .age-toggle-row {
   display: flex;
