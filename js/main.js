@@ -880,15 +880,21 @@ async function openSportDetails(sport) {
 function selectAgeCategory(category) {
   currentAgeCategory = category;
 
-  const pillAdult   = document.getElementById('pill-adult');
-  const pillUnder   = document.getElementById('pill-under18');
+  const pillAdult  = document.getElementById('pill-adult');
+  const pillUnder  = document.getElementById('pill-under18');
+  const pillSenior = document.getElementById('pill-senior');
   const gradeSection = document.getElementById('grade-section');
 
   pillAdult.classList.remove('selected');
   pillUnder.classList.remove('selected');
+  if (pillSenior) pillSenior.classList.remove('selected');
 
   if (category === '18+') {
     pillAdult.classList.add('selected');
+    gradeSection.style.display = 'none';
+    document.getElementById('f-grade').value = '';
+  } else if (category === 'Senior Citizen') {
+    if (pillSenior) pillSenior.classList.add('selected');
     gradeSection.style.display = 'none';
     document.getElementById('f-grade').value = '';
   } else {
@@ -920,10 +926,14 @@ function openRegistrationForm(sport) {
   document.querySelectorAll('input[name="gender"]').forEach(r => r.checked = false);
 
   currentAgeCategory = null;
-  const pillAdult   = document.getElementById('pill-adult');
-  const pillUnder   = document.getElementById('pill-under18');
-  if (pillAdult) pillAdult.classList.remove('selected');
-  if (pillUnder) pillUnder.classList.remove('selected');
+  const pillAdult  = document.getElementById('pill-adult');
+  const pillUnder  = document.getElementById('pill-under18');
+  const pillSenior = document.getElementById('pill-senior');
+  if (pillAdult)  pillAdult.classList.remove('selected');
+  if (pillUnder)  pillUnder.classList.remove('selected');
+  if (pillSenior) pillSenior.classList.remove('selected');
+  // Show Senior Citizen pill only for Track Events
+  if (pillSenior) pillSenior.style.display = sport.name === 'Track Events' ? 'inline-flex' : 'none';
   const gradeSection = document.getElementById('grade-section');
   if (gradeSection) gradeSection.style.display = 'none';
   const gradeSelect = document.getElementById('f-grade');
@@ -2627,8 +2637,9 @@ function updateFilterChipStyles() {
   const chipMap = {
     'fc-male':    { type: 'gender',      val: 'Male'         },
     'fc-female':  { type: 'gender',      val: 'Female'       },
-    'fc-adult':   { type: 'ageCategory', val: '18+'          },
-    'fc-under18': { type: 'ageCategory', val: 'Under 18'     },
+    'fc-adult':   { type: 'ageCategory', val: '18+'             },
+    'fc-under18': { type: 'ageCategory', val: 'Under 18'       },
+    'fc-senior':  { type: 'ageCategory', val: 'Senior Citizen' },
     'fc-singles': { type: 'subcategory', val: 'Singles'      },
     'fc-doubles': { type: 'subcategory', val: 'Doubles'      },
     'fc-mixed':   { type: 'subcategory', val: 'Mixed Doubles' },

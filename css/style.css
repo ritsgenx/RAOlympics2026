@@ -2610,6 +2610,13 @@ textarea.edit-field-input {
   color: #89b4fa;
 }
 
+/* Senior Citizen selected — teal green */
+#pill-senior.selected {
+  background: rgba(29,158,117,0.12);
+  border-color: #1D9E75;
+  color: #1D9E75;
+}
+
 /* Grade hint text */
 @keyframes blink-orange {
   0%, 100% { opacity: 1; }
