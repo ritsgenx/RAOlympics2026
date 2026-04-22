@@ -245,20 +245,20 @@ const SPORTS = [
     ]
   },
   {
-    name: "Carrom", emoji: "🟫", image: "images/carrom.png",
-    subcategories:   ["Singles", "Doubles"],
+    name: "Skating", emoji: "⛸️",
+    subcategories:   ["Individual"],
     datetime:        "TBD",
-    venue:           "Club House — Indoor Hall",
-    maxParticipants: "32 players",
-    ageGroup:        "Open for all ages",
+    venue:           "Apartment Skating Rink / Open Ground",
+    maxParticipants: "40 participants",
+    ageGroup:        "Kids (6–14), Adults (15+)",
     contact:         "TBD",
     rules: [
-      "Singles and Doubles categories (knockout format)",
-      "Standard Carrom Federation rules apply",
-      "Board and coins provided by organizers",
-      "Strike must be flicked with a finger — no pushing",
-      "Queen must be covered immediately after pocketing",
-      "Players must report 10 min before their match"
+      "Individual category — knockout format",
+      "Helmet, knee pads, and elbow pads are mandatory",
+      "Participants must bring their own skates",
+      "Separate age brackets: Kids (6–14) and Adults (15+)",
+      "Judged on speed, form, and control",
+      "Participants must report 15 min before their event"
     ]
   },
   {
@@ -347,20 +347,20 @@ const SPORTS = [
     ]
   },
   {
-    name: "Skating", emoji: "⛸️",
-    subcategories:   ["Individual"],
+    name: "Carrom", emoji: "🟫", image: "images/carrom.png",
+    subcategories:   ["Singles", "Doubles"],
     datetime:        "TBD",
-    venue:           "Apartment Skating Rink / Open Ground",
-    maxParticipants: "40 participants",
-    ageGroup:        "Kids (6–14), Adults (15+)",
+    venue:           "Club House — Indoor Hall",
+    maxParticipants: "32 players",
+    ageGroup:        "Open for all ages",
     contact:         "TBD",
     rules: [
-      "Individual category — knockout format",
-      "Helmet, knee pads, and elbow pads are mandatory",
-      "Participants must bring their own skates",
-      "Separate age brackets: Kids (6–14) and Adults (15+)",
-      "Judged on speed, form, and control",
-      "Participants must report 15 min before their event"
+      "Singles and Doubles categories (knockout format)",
+      "Standard Carrom Federation rules apply",
+      "Board and coins provided by organizers",
+      "Strike must be flicked with a finger — no pushing",
+      "Queen must be covered immediately after pocketing",
+      "Players must report 10 min before their match"
     ]
   },
 ];
