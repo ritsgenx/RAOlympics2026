@@ -437,7 +437,7 @@ const BLOCK_COLORS = ['#0080ff', '#ff6a00', '#00e5a0', '#c84bff', '#f1c40f'];
 
 // ── Track Events sub-event mapping ──
 const TRACK_EVENTS_MAP = {
-  '18+':            ['100m', '3KM Run', 'Fun Race', 'Relay Race'],
+  '18+':            ['100m', '3KM Run', 'Fun Race', 'Relay Race', 'Couple Game(s)'],
   'Senior Citizen': ['Fast Walking / Slow Jogging', '1 Minute Games', '3KM Run'],
   'under18-1-3':    ['100m Race', '3KM Race', 'One Leg Hop Race', 'Fun Race'],
   'under18-4-6':    ['100m Race', '3KM Race', 'Book Balancing', 'Slow Cycling'],
