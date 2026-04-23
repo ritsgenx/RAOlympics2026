@@ -2447,6 +2447,7 @@ function renderAllRegs(regs) {
 
 // ── Admin panel ──
 let _adminAllUsers = [];
+let _adminSortMode = 'flat';
 let _adminPanelCache = null;
 let _adminPanelCacheTime = 0;
 const ADMIN_PANEL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
@@ -2469,6 +2470,9 @@ async function loadAdminPanel() {
   const listEl = document.getElementById('admin-user-list');
   const searchEl = document.getElementById('admin-search');
   if (searchEl) searchEl.value = '';
+  _adminSortMode = 'flat';
+  const flatRadio = document.querySelector('input[name="admin-sort"][value="flat"]');
+  if (flatRadio) flatRadio.checked = true;
 
   // Inject cache status bar if not already present
   let statusEl = document.getElementById('admin-panel-cache-status');
@@ -2488,7 +2492,7 @@ async function loadAdminPanel() {
     document.getElementById('admin-stat-regs').textContent  = _adminPanelCache.regsSize;
     const minsRemaining = Math.max(1, Math.ceil((ADMIN_PANEL_CACHE_DURATION - (now - _adminPanelCacheTime)) / 60000));
     statusEl.innerHTML = `📋 Cached · Refreshes in ${minsRemaining} min${minsRemaining !== 1 ? 's' : ''} <button onclick="_adminPanelCache=null;_adminPanelCacheTime=0;loadAdminPanel()" title="Refresh now" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;opacity:0.7;vertical-align:middle">🔄</button>`;
-    renderAdminUserList(_adminAllUsers);
+    renderAdminUserList(sortAdminUsers(_adminAllUsers));
     return;
   }
 
@@ -2513,20 +2517,36 @@ async function loadAdminPanel() {
     document.getElementById('admin-stat-pics').textContent  = totalPics;
     document.getElementById('admin-stat-regs').textContent  = regsSnap.size;
     statusEl.textContent = '📋 Live data · Just loaded';
-    renderAdminUserList(_adminAllUsers);
+    renderAdminUserList(sortAdminUsers(_adminAllUsers));
   } catch (err) {
     console.error(err);
     listEl.innerHTML = '<div class="empty-state">Could not load users.</div>';
   }
 }
 
+function sortAdminUsers(users) {
+  if (_adminSortMode === 'date') {
+    return [...users].sort((a, b) => {
+      const ta = a.createdAt?.seconds ?? 0;
+      const tb = b.createdAt?.seconds ?? 0;
+      return tb - ta; // descending — most recent first
+    });
+  }
+  return sortUsersByFlat(users);
+}
+
+function setAdminSort(mode) {
+  _adminSortMode = mode;
+  filterAdminUsers();
+}
+
 function filterAdminUsers() {
   const q = (document.getElementById('admin-search').value || '').trim().toLowerCase();
-  const filtered = q
-    ? sortUsersByFlat(_adminAllUsers.filter(u =>
-        (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q)))
+  const base = q
+    ? _adminAllUsers.filter(u =>
+        (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q))
     : _adminAllUsers;
-  renderAdminUserList(filtered);
+  renderAdminUserList(sortAdminUsers(base));
 }
 
 function renderAdminUserList(users) {
@@ -3246,6 +3266,7 @@ window.verifyAdminPin       = verifyAdminPin;
 window.skipAdminVerification = skipAdminVerification;
 window.openPicSportDetail   = openPicSportDetail;
 window.filterAdminUsers     = filterAdminUsers;
+window.setAdminSort         = setAdminSort;
 window.toggleUserExpand     = toggleUserExpand;
 window.toggleSportCheckbox  = toggleSportCheckbox;
 window.saveUserRole            = saveUserRole;
