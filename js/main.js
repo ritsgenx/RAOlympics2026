@@ -2447,6 +2447,9 @@ function renderAllRegs(regs) {
 
 // ── Admin panel ──
 let _adminAllUsers = [];
+let _adminPanelCache = null;
+let _adminPanelCacheTime = 0;
+const ADMIN_PANEL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 function sortUsersByFlat(users) {
   return [...users].sort((a, b) => {
@@ -2464,12 +2467,36 @@ function sortUsersByFlat(users) {
 
 async function loadAdminPanel() {
   const listEl = document.getElementById('admin-user-list');
+  const searchEl = document.getElementById('admin-search');
+  if (searchEl) searchEl.value = '';
+
+  // Inject cache status bar if not already present
+  let statusEl = document.getElementById('admin-panel-cache-status');
+  if (!statusEl) {
+    statusEl = document.createElement('div');
+    statusEl.id = 'admin-panel-cache-status';
+    statusEl.style.cssText = 'text-align:center;font-size:11px;color:var(--text3);margin-bottom:8px;font-style:italic';
+    listEl.parentNode.insertBefore(statusEl, listEl);
+  }
+
+  const now = Date.now();
+  if (_adminPanelCache && (now - _adminPanelCacheTime) < ADMIN_PANEL_CACHE_DURATION) {
+    _adminAllUsers = _adminPanelCache.users;
+    const totalPics = _adminAllUsers.filter(u => u.role === 'pic').length;
+    document.getElementById('admin-stat-users').textContent = _adminAllUsers.length;
+    document.getElementById('admin-stat-pics').textContent  = totalPics;
+    document.getElementById('admin-stat-regs').textContent  = _adminPanelCache.regsSize;
+    const minsRemaining = Math.max(1, Math.ceil((ADMIN_PANEL_CACHE_DURATION - (now - _adminPanelCacheTime)) / 60000));
+    statusEl.innerHTML = `📋 Cached · Refreshes in ${minsRemaining} min${minsRemaining !== 1 ? 's' : ''} <button onclick="_adminPanelCache=null;_adminPanelCacheTime=0;loadAdminPanel()" title="Refresh now" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;opacity:0.7;vertical-align:middle">🔄</button>`;
+    renderAdminUserList(_adminAllUsers);
+    return;
+  }
+
   listEl.innerHTML = '<div class="empty-state">Loading…</div>';
   document.getElementById('admin-stat-users').textContent = '—';
   document.getElementById('admin-stat-pics').textContent  = '—';
   document.getElementById('admin-stat-regs').textContent  = '—';
-  const searchEl = document.getElementById('admin-search');
-  if (searchEl) searchEl.value = '';
+  statusEl.textContent = '';
 
   try {
     const [usersSnap, regsSnap] = await Promise.all([
@@ -2479,9 +2506,13 @@ async function loadAdminPanel() {
     _adminAllUsers = sortUsersByFlat(usersSnap.docs.map(d => ({ docId: d.id, ...d.data() })));
     const totalPics = _adminAllUsers.filter(u => u.role === 'pic').length;
 
+    _adminPanelCache     = { users: _adminAllUsers, regsSize: regsSnap.size };
+    _adminPanelCacheTime = Date.now();
+
     document.getElementById('admin-stat-users').textContent = _adminAllUsers.length;
     document.getElementById('admin-stat-pics').textContent  = totalPics;
     document.getElementById('admin-stat-regs').textContent  = regsSnap.size;
+    statusEl.textContent = '📋 Live data · Just loaded';
     renderAdminUserList(_adminAllUsers);
   } catch (err) {
     console.error(err);
@@ -2633,6 +2664,8 @@ async function saveUserRole(docId, newRole) {
       : newRole === 'pic'
         ? `${user.name} is now PIC for: ${picSports.join(', ')}`
         : `${user.name}'s role reset to participant`);
+    _adminPanelCache = null;
+    _adminPanelCacheTime = 0;
     await loadAdminPanel();
   } catch (err) {
     console.error(err);
