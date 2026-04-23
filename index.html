@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -382,6 +383,7 @@
       <div id="reg-list" class="reg-list">
         <div class="empty-state">No registrations yet. Go pick a sport!</div>
       </div>
+      <div id="share-card-wrap"></div>
       <p id="reset-profile-btn" onclick="resetProfile()" style="margin-top:40px;text-align:center;font-size:11px;color:var(--text3);cursor:pointer;padding-bottom:8px;">Reset my profile</p>
       <div class="made-with-love" style="margin-top:8px">
         Made by Ritesh. Reach out to me on <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">WhatsApp</a> for any assistance or feedback — happy to help!
@@ -753,6 +755,16 @@
     <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">Ritesh</a>
   </div>
   -->
+
+  <!-- Share Card Modal -->
+  <div id="share-card-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;overflow-y:auto">
+    <div id="share-card-content"></div>
+    <div style="display:flex;gap:12px;margin-top:4px">
+      <button class="btn-primary" onclick="downloadShareCard()">💾 Save as Image</button>
+      <button class="btn-secondary" onclick="closeShareCard()">✕ Close</button>
+    </div>
+    <p style="font-size:11px;color:#666;text-align:center;margin-top:0">Or take a screenshot and share on WhatsApp!</p>
+  </div>
 
   <script type="module" src="js/main.js"></script>
 </body>

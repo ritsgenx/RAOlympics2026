@@ -1197,6 +1197,95 @@ async function updateRegistrationSummary(sportName, block, partnerBlock) {
   }
 }
 
+// ── Share card ──
+let _myRegDocs = [];
+
+function showShareCard() {
+  const myDocs = _myRegDocs.filter(d => !d.isPartnerEntry);
+  const seen = new Set();
+  const uniqueDocs = myDocs.filter(d => {
+    if (seen.has(d.sport)) return false;
+    seen.add(d.sport);
+    return true;
+  });
+  const sportsHtml = uniqueDocs.map(d => {
+    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:7px;border-left:3px solid #CC0000">
+      <span style="font-size:22px;flex-shrink:0">${d.sportEmoji || '🏆'}</span>
+      <span style="font-size:13px;color:#F5E6C8;font-weight:600;line-height:1.3;letter-spacing:0.3px">${d.sport}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('share-card-content').innerHTML = `
+    <div id="share-card-inner" style="width:310px;background:linear-gradient(175deg,#0D0D0D 0%,#1A0A0A 50%,#0D0D0D 100%);border-radius:24px;overflow:hidden;font-family:system-ui,sans-serif;box-shadow:0 20px 60px rgba(204,0,0,0.4),0 0 0 1px rgba(200,160,0,0.2)">
+
+      <!-- Top red bar -->
+      <div style="height:5px;background:linear-gradient(90deg,#8B0000,#CC0000,#FF2020,#CC0000,#8B0000)"></div>
+
+      <!-- Header -->
+      <div style="padding:26px 20px 20px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-30px;left:-30px;width:110px;height:110px;background:radial-gradient(circle,rgba(204,0,0,0.18),transparent);border-radius:50%"></div>
+        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(200,160,0,0.15),transparent);border-radius:50%"></div>
+
+        <div style="font-size:48px;position:relative;filter:drop-shadow(0 0 12px rgba(204,0,0,0.6))">🏆</div>
+        <div style="font-size:18px;font-weight:900;letter-spacing:3px;color:#FFD700;margin-top:10px;position:relative;text-shadow:0 0 12px rgba(240,165,0,0.5)">RA OLYMPICS 2026</div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:2.5px;color:rgba(200,160,0,0.7);margin-top:5px;text-transform:uppercase">Rohan Avriti · Whitefield</div>
+
+        <!-- Gold divider -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#8B6914)"></div>
+          <div style="width:6px;height:6px;background:#CC0000;border-radius:50%;box-shadow:0 0 6px #CC0000"></div>
+          <div style="width:4px;height:4px;background:#FFD700;border-radius:50%"></div>
+          <div style="width:6px;height:6px;background:#CC0000;border-radius:50%;box-shadow:0 0 6px #CC0000"></div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,#8B6914,transparent)"></div>
+        </div>
+      </div>
+
+      <!-- Name section -->
+      <div style="text-align:center;padding:0 20px 16px">
+        <div style="font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:0.5px;text-shadow:0 2px 12px rgba(204,0,0,0.4)">${userProfile.name}</div>
+        <div style="display:inline-block;margin-top:6px;background:linear-gradient(135deg,#CC0000,#8B0000);color:#FFD700;font-size:10px;font-weight:700;letter-spacing:1.5px;padding:3px 14px;border-radius:99px;text-transform:uppercase">Official Participant</div>
+      </div>
+
+      <!-- Sports section -->
+      <div style="padding:0 16px 20px">
+        <div style="text-align:center;font-size:10px;color:rgba(200,160,0,0.8);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">⚔️ Competing in ${uniqueDocs.length} sport${uniqueDocs.length !== 1 ? 's' : ''} ⚔️</div>
+        ${sportsHtml}
+      </div>
+
+      <!-- Bottom gold bar -->
+      <div style="padding:10px 16px 14px;text-align:center;border-top:1px solid rgba(200,160,0,0.15)">
+        <div style="font-size:12px;font-weight:700;color:#FFD700;letter-spacing:0.5px;text-shadow:0 0 8px rgba(240,165,0,0.4)">🔥 Let the games begin! 🔥</div>
+      </div>
+
+      <!-- Bottom red bar -->
+      <div style="height:5px;background:linear-gradient(90deg,#8B0000,#CC0000,#FF2020,#CC0000,#8B0000)"></div>
+    </div>`;
+
+  const modal = document.getElementById('share-card-modal');
+  modal.style.display = 'flex';
+}
+
+function closeShareCard() {
+  document.getElementById('share-card-modal').style.display = 'none';
+}
+
+async function downloadShareCard() {
+  const card = document.getElementById('share-card-inner');
+  if (!card || typeof html2canvas === 'undefined') {
+    showToast('Could not save — please take a screenshot instead!', true);
+    return;
+  }
+  try {
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: null, useCORS: true });
+    const link = document.createElement('a');
+    link.download = 'Avriti-Olympics-2026.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (e) {
+    showToast('Could not save — please take a screenshot instead!', true);
+  }
+}
+
 // ── My registrations ──
 async function loadRegistrations() {
   const firstName = userProfile.name.split(' ')[0];
@@ -1213,8 +1302,12 @@ async function loadRegistrations() {
     document.getElementById('stat-total').textContent  = docs.length;
     document.getElementById('stat-sports').textContent = new Set(docs.map(d => d.sport)).size;
 
+    _myRegDocs = docs;
+    const wrap = document.getElementById('share-card-wrap');
+
     if (docs.length === 0) {
       list.innerHTML = '<div class="empty-state">No registrations yet.<br/>Go pick a sport! 🏆</div>';
+      if (wrap) wrap.innerHTML = '';
       return;
     }
     list.innerHTML = '';
@@ -1254,6 +1347,13 @@ async function loadRegistrations() {
       });
       list.appendChild(card);
     });
+
+    if (wrap) {
+      wrap.innerHTML = `
+        <button class="btn-secondary" style="width:100%;margin-top:16px;font-size:14px" onclick="showShareCard()">
+          🎉 Generate My Share Card
+        </button>`;
+    }
   } catch (err) {
     console.error(err);
     list.innerHTML = '<div class="empty-state">Error loading registrations.</div>';
@@ -3267,6 +3367,9 @@ window.skipAdminVerification = skipAdminVerification;
 window.openPicSportDetail   = openPicSportDetail;
 window.filterAdminUsers     = filterAdminUsers;
 window.setAdminSort         = setAdminSort;
+window.showShareCard        = showShareCard;
+window.closeShareCard       = closeShareCard;
+window.downloadShareCard    = downloadShareCard;
 window.toggleUserExpand     = toggleUserExpand;
 window.toggleSportCheckbox  = toggleSportCheckbox;
 window.saveUserRole            = saveUserRole;
