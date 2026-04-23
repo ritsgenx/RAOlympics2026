@@ -297,7 +297,7 @@ const SPORTS = [
   },
   {
     name: "Mr/Ms/Mrs Avriti (Fitness)", emoji: "🏋️‍♀️",
-    subcategories:   ["Mr Avriti", "Ms Avriti", "Mrs Avriti"],
+    subcategories:   [],
     datetime:        "TBD",
     venue:           "Club House Stage / Amphitheatre",
     maxParticipants: "30 participants",
