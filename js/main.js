@@ -1844,7 +1844,7 @@ async function openPicSportDetail(sportName) {
     const regs = snap.docs.map(d => d.data()).sort((a, b) => {
       const tsA = a.registeredAt?.seconds ?? 0;
       const tsB = b.registeredAt?.seconds ?? 0;
-      return tsA - tsB;
+      return tsB - tsA; // descending — latest first
     });
 
     if (!regs.length) {
@@ -2524,6 +2524,9 @@ function renderAllRegs(regs) {
     if (!bySport[d.sport]) bySport[d.sport] = [];
     bySport[d.sport].push(d);
   });
+  Object.values(bySport).forEach(arr => arr.sort((a, b) =>
+    (b.registeredAt?.seconds ?? 0) - (a.registeredAt?.seconds ?? 0)
+  ));
   listEl.innerHTML = SPORTS
     .filter(s => bySport[s.name])
     .map(s => {
