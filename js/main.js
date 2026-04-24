@@ -387,6 +387,7 @@ let userProfile        = null;
 let blockChart         = null;
 let deleteTargetId     = null;
 let deleteTargetName   = null;
+let _nudgeScrollHandler = null;
 
 // ── Quiz state ──
 let quizCurrentIndex      = 0;
@@ -791,6 +792,31 @@ function buildSportsGrid() {
 }
 
 // ── Sport details ──
+function hideScrollNudge() {
+  document.getElementById('scroll-nudge').classList.remove('visible');
+}
+
+function setupScrollNudge() {
+  const screen = document.getElementById('screen-details');
+  const nudge  = document.getElementById('scroll-nudge');
+  const btn    = document.getElementById('det-register-btn');
+
+  if (_nudgeScrollHandler) {
+    screen.removeEventListener('scroll', _nudgeScrollHandler);
+    _nudgeScrollHandler = null;
+  }
+
+  function update() {
+    const rect = btn.getBoundingClientRect();
+    nudge.classList.toggle('visible', rect.top >= window.innerHeight - 40);
+  }
+
+  _nudgeScrollHandler = update;
+  screen.addEventListener('scroll', update, { passive: true });
+  nudge.onclick = () => btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(update, 200);
+}
+
 async function openSportDetails(sport) {
   currentSport          = sport;
   currentSubcategory    = null;
@@ -924,6 +950,7 @@ async function openSportDetails(sport) {
   }
 
   showScreen('screen-details');
+  setupScrollNudge();
 }
 
 // ── Registration form ──
@@ -2039,6 +2066,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
+  if (id !== 'screen-details') hideScrollNudge();
   document.getElementById('tab-bar').style.display =
     TAB_SCREENS.includes(id) ? 'flex' : 'none';
   if (id === 'screen-registrations') loadRegistrations();
