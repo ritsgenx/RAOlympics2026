@@ -1197,6 +1197,26 @@ async function updateRegistrationSummary(sportName, block, partnerBlock) {
   }
 }
 
+// ── Registration summary decrementer (called on deletion) ──
+async function decrementRegistrationSummary(sportName, blockKey) {
+  try {
+    const summaryRef  = doc(db, 'config', 'registrationSummary');
+    const summarySnap = await getDoc(summaryRef);
+    if (!summarySnap.exists()) return;
+
+    const summary = summarySnap.data();
+    summary.totalRegistrations = Math.max(0, (summary.totalRegistrations || 1) - 1);
+    if (summary.byBlock[blockKey] !== undefined)
+      summary.byBlock[blockKey] = Math.max(0, summary.byBlock[blockKey] - 1);
+    if (summary.bySport[sportName] !== undefined)
+      summary.bySport[sportName] = Math.max(0, summary.bySport[sportName] - 1);
+    summary.lastUpdated = serverTimestamp();
+    await setDoc(summaryRef, summary);
+  } catch(err) {
+    console.error('Summary decrement failed:', err);
+  }
+}
+
 // ── Share card ──
 let _myRegDocs = [];
 
@@ -2064,7 +2084,30 @@ async function confirmDelete() {
 
   showLoading(true);
   try {
-    await deleteDoc(doc(db, 'registrations', deleteTargetId));
+    const regRef  = doc(db, 'registrations', deleteTargetId);
+    const regSnap = await getDoc(regRef);
+
+    let sportName = null, blockKey = null;
+    if (regSnap.exists()) {
+      const data = regSnap.data();
+      sportName = data.sport || 'Unknown';
+      const flat = data.flat || '';
+      const blockMatch = flat.match(/^([A-Fa-f])-/) || flat.match(/Block\s*([A-Fa-f])/i);
+      blockKey = blockMatch
+        ? blockMatch[1].toUpperCase()
+        : (data.block && /^[A-Fa-f]$/i.test(data.block) ? data.block.toUpperCase() : 'Unknown');
+    }
+
+    await deleteDoc(regRef);
+
+    if (sportName && blockKey) {
+      await decrementRegistrationSummary(sportName, blockKey);
+    }
+
+    // Invalidate admin dashboard cache so the graph is fresh on next load
+    dashboardCache     = null;
+    dashboardCacheTime = 0;
+
     closeDeleteModal();
     showToast(`"${deleteTargetName}" registration deleted successfully!`);
     updateMyListBadge();
