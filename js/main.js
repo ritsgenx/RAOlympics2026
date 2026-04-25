@@ -797,10 +797,11 @@ function hideScrollNudge() {
   document.getElementById('scroll-nudge').classList.remove('visible');
 }
 
-function setupScreenNudge(screenId, targetId) {
+function setupScreenNudge(screenId, targetId, label) {
   const screen = document.getElementById(screenId);
   const nudge  = document.getElementById('scroll-nudge');
   const target = document.getElementById(targetId);
+  document.getElementById('scroll-nudge-label').textContent = label || 'Scroll Down';
 
   if (_nudgeScrollHandler && _nudgeScreenEl) {
     _nudgeScreenEl.removeEventListener('scroll', _nudgeScrollHandler);
@@ -957,7 +958,7 @@ async function openSportDetails(sport) {
   }
 
   showScreen('screen-details');
-  setupScreenNudge('screen-details', 'det-register-btn');
+  setupScreenNudge('screen-details', 'det-register-btn', 'Scroll to Register');
 }
 
 // ── Registration form ──
