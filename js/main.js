@@ -808,6 +808,7 @@ function setupScreenNudge(screenId, targetId, label) {
   }
   _nudgeScrollHandler = null;
   _nudgeScreenEl      = screen;
+  nudge.classList.toggle('above-tabs', TAB_SCREENS.includes(screenId));
 
   function update() {
     const rect = target.getBoundingClientRect();

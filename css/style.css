@@ -2746,13 +2746,17 @@ textarea.edit-field-input {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  pointer-events: auto;
+  pointer-events: none;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.35s ease, bottom 0.2s ease;
 }
 .scroll-nudge-wrap.visible {
   opacity: 1;
+  pointer-events: auto;
+}
+.scroll-nudge-wrap.above-tabs {
+  bottom: 90px;
 }
 .scroll-nudge-label {
   font-size: 10px;
