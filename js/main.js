@@ -388,6 +388,7 @@ let blockChart         = null;
 let deleteTargetId     = null;
 let deleteTargetName   = null;
 let _nudgeScrollHandler = null;
+let _nudgeScreenEl      = null;
 
 // ── Quiz state ──
 let quizCurrentIndex      = 0;
@@ -796,25 +797,31 @@ function hideScrollNudge() {
   document.getElementById('scroll-nudge').classList.remove('visible');
 }
 
-function setupScrollNudge() {
-  const screen = document.getElementById('screen-details');
+function setupScreenNudge(screenId, targetId) {
+  const screen = document.getElementById(screenId);
   const nudge  = document.getElementById('scroll-nudge');
-  const btn    = document.getElementById('det-register-btn');
+  const target = document.getElementById(targetId);
 
-  if (_nudgeScrollHandler) {
-    screen.removeEventListener('scroll', _nudgeScrollHandler);
-    _nudgeScrollHandler = null;
+  if (_nudgeScrollHandler && _nudgeScreenEl) {
+    _nudgeScreenEl.removeEventListener('scroll', _nudgeScrollHandler);
   }
+  _nudgeScrollHandler = null;
+  _nudgeScreenEl      = screen;
 
   function update() {
-    const rect = btn.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
     nudge.classList.toggle('visible', rect.top >= window.innerHeight - 40);
   }
 
   _nudgeScrollHandler = update;
   screen.addEventListener('scroll', update, { passive: true });
-  nudge.onclick = () => btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  nudge.onclick = () => target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(update, 200);
+}
+
+function setupDashboardNudge() {
+  const targetId = graphVisibility.showSportGraph ? 'dash-sport-chart' : 'dash-chart';
+  setupScreenNudge('screen-dashboard', targetId);
 }
 
 async function openSportDetails(sport) {
@@ -950,7 +957,7 @@ async function openSportDetails(sport) {
   }
 
   showScreen('screen-details');
-  setupScrollNudge();
+  setupScreenNudge('screen-details', 'det-register-btn');
 }
 
 // ── Registration form ──
@@ -1741,6 +1748,8 @@ function renderDashboardFromData(docs, source) {
     if (showPic)       renderPicSection(roleSection, userProfile.picSports, docs);
     if (showAdminData) renderAdminDataSection(roleSection, docs);
   }
+
+  setupDashboardNudge();
 }
 
 // ── Dashboard renderer for participant / PIC view (reads from summary doc) ──
@@ -1833,6 +1842,8 @@ function renderDashboardFromSummary(summary) {
     document.querySelector('#screen-dashboard .screen-inner').appendChild(roleSection);
     renderPicSection(roleSection, userProfile.picSports, null, summary);
   }
+
+  setupDashboardNudge();
 }
 
 // ── PIC participant detail section — sport selection buttons ──
@@ -2066,7 +2077,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
-  if (id !== 'screen-details') hideScrollNudge();
+  if (id !== 'screen-details' && id !== 'screen-dashboard') hideScrollNudge();
   document.getElementById('tab-bar').style.display =
     TAB_SCREENS.includes(id) ? 'flex' : 'none';
   if (id === 'screen-registrations') loadRegistrations();
