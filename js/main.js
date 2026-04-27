@@ -1343,6 +1343,19 @@ async function downloadShareCard() {
 }
 
 // ── My registrations ──
+const AVATAR_PALETTE = [
+  '#0080ff', '#ff6a00', '#00c896', '#a855f7',
+  '#f472b6', '#10b981', '#f59e0b', '#3b82f6',
+  '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16',
+];
+function nameToAvatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
 async function loadRegistrations() {
   const firstName = userProfile.name.split(' ')[0];
   document.getElementById('reg-greeting-text').textContent =
@@ -1366,42 +1379,95 @@ async function loadRegistrations() {
       if (wrap) wrap.innerHTML = '';
       return;
     }
-    list.innerHTML = '';
+    // Group registrations by registrant name
+    const grouped = new Map();
     docs.forEach(d => {
-      const card = document.createElement('div');
-      card.className = 'reg-card' + (d.isPartnerEntry ? ' partner-entry-card' : '');
-      const cls        = d.regtype === 'Self' ? 'self' : d.regtype === 'Kid' ? 'kid' : d.regtype === 'Partner' ? 'partner' : '';
-      const sportLabel = d.subcategory ? `${d.sport} — ${d.subcategory}` : d.sport;
-      const partnerTag = d.isPartnerEntry
-        ? `<span class="reg-tag partner-entry">👥 Added as partner by ${d.partnerOfName || 'someone'}</span>`
-        : (d.partnerName
-          ? `<span class="reg-tag">Partner: ${d.partnerName} · Blk ${d.partnerBlock || ''} Flat ${d.partnerFlatNum || d.partnerFlat || ''}</span>`
-          : '');
-      card.innerHTML = `
-        <div class="reg-card-icon">${d.sportEmoji || '🏆'}</div>
-        <div class="reg-card-info">
-          <div class="reg-card-sport">${sportLabel}</div>
-          ${d.registeredAt ? `<div style="font-size:11px;color:var(--text3);margin-bottom:4px">🕐 ${formatTimestamp(d.registeredAt)}</div>` : ''}
-          <div class="reg-card-details">
-            <span class="reg-tag">${d.name}</span>
-            ${d.ageCategory ? `<span class="reg-tag">${d.ageCategory}</span>` : (d.age ? `<span class="reg-tag">Age ${d.age}</span>` : '')}
-            ${d.grade ? `<span class="reg-tag">${d.grade}</span>` : ''}
-            ${d.gender ? `<span class="reg-tag">${d.gender}</span>` : ''}
-            <span class="reg-tag ${cls}">${d.regtype}</span>
-            <span class="reg-tag">Flat ${d.flat}</span>
-            ${d.actType ? `<span class="reg-tag">🎤 ${d.actType}</span>` : ''}
-            ${d.openMicCategory ? `<span class="reg-tag">${d.openMicCategory}</span>` : ''}
-            ${d.withInstrument ? `<span class="reg-tag">🎵 ${d.withInstrument === 'Yes' ? (d.instrumentName || 'With Instrument') : 'No Instrument'}</span>` : ''}
-            ${d.trackEvents?.length ? d.trackEvents.map(e => `<span class="reg-tag">🏃 ${e}</span>`).join('') : ''}
-            ${partnerTag}
+      const name = d.name || 'Unknown';
+      if (!grouped.has(name)) grouped.set(name, []);
+      grouped.get(name).push(d);
+    });
+
+    // Self first, then others alphabetically
+    const selfName    = userProfile.name;
+    const sortedNames = [...grouped.keys()].sort((a, b) => {
+      if (a === selfName) return -1;
+      if (b === selfName) return 1;
+      return a.localeCompare(b);
+    });
+
+    list.innerHTML = '';
+    sortedNames.forEach(name => {
+      const entries  = grouped.get(name);
+      const isSelf   = (name === selfName);
+      const isOpen   = isSelf;
+      const countTxt   = `${entries.length} event${entries.length !== 1 ? 's' : ''}`;
+      const avatarColor = nameToAvatarColor(name);
+
+      const group = document.createElement('div');
+      group.className = 'reg-group';
+
+      const header = document.createElement('div');
+      header.className = 'reg-group-header';
+      header.innerHTML = `
+        <div class="reg-group-name-wrap">
+          <div class="reg-group-avatar" style="background:${avatarColor}">${name.charAt(0).toUpperCase()}</div>
+          <div>
+            <div class="reg-group-name">${name}${isSelf ? '<span class="reg-group-you">You</span>' : ''}</div>
+            <div class="reg-group-subtext">${countTxt}</div>
           </div>
         </div>
-        <button class="reg-delete-btn" title="Delete registration">🗑️</button>
+        <span class="reg-group-chevron${isOpen ? ' open' : ''}">›</span>
       `;
-      card.querySelector('.reg-delete-btn').addEventListener('click', () => {
-        openDeleteModal(d.id, sportLabel);
+
+      const body = document.createElement('div');
+      body.className = 'reg-group-body' + (isOpen ? '' : ' collapsed');
+
+      entries.forEach(d => {
+        const card = document.createElement('div');
+        card.className = 'reg-card' + (d.isPartnerEntry ? ' partner-entry-card' : '');
+        const cls        = d.regtype === 'Self' ? 'self' : d.regtype === 'Kid' ? 'kid' : d.regtype === 'Partner' ? 'partner' : '';
+        const sportLabel = d.subcategory ? `${d.sport} — ${d.subcategory}` : d.sport;
+        const partnerTag = d.isPartnerEntry
+          ? `<span class="reg-tag partner-entry">👥 Added as partner by ${d.partnerOfName || 'someone'}</span>`
+          : (d.partnerName
+            ? `<span class="reg-tag">Partner: ${d.partnerName} · Blk ${d.partnerBlock || ''} Flat ${d.partnerFlatNum || d.partnerFlat || ''}</span>`
+            : '');
+        card.innerHTML = `
+          <div class="reg-card-icon">${d.sportEmoji || '🏆'}</div>
+          <div class="reg-card-info">
+            <div class="reg-card-sport">${sportLabel}</div>
+            ${d.registeredAt ? `<div style="font-size:11px;color:var(--text3);margin-bottom:4px">🕐 ${formatTimestamp(d.registeredAt)}</div>` : ''}
+            <div class="reg-card-details">
+              <span class="reg-tag">${d.name}</span>
+              ${d.ageCategory ? `<span class="reg-tag">${d.ageCategory}</span>` : (d.age ? `<span class="reg-tag">Age ${d.age}</span>` : '')}
+              ${d.grade ? `<span class="reg-tag">${d.grade}</span>` : ''}
+              ${d.gender ? `<span class="reg-tag">${d.gender}</span>` : ''}
+              <span class="reg-tag ${cls}">${d.regtype}</span>
+              <span class="reg-tag">Flat ${d.flat}</span>
+              ${d.actType ? `<span class="reg-tag">🎤 ${d.actType}</span>` : ''}
+              ${d.openMicCategory ? `<span class="reg-tag">${d.openMicCategory}</span>` : ''}
+              ${d.withInstrument ? `<span class="reg-tag">🎵 ${d.withInstrument === 'Yes' ? (d.instrumentName || 'With Instrument') : 'No Instrument'}</span>` : ''}
+              ${d.trackEvents?.length ? d.trackEvents.map(e => `<span class="reg-tag">🏃 ${e}</span>`).join('') : ''}
+              ${partnerTag}
+            </div>
+          </div>
+          <button class="reg-delete-btn" title="Delete registration">🗑️</button>
+        `;
+        card.querySelector('.reg-delete-btn').addEventListener('click', () => {
+          openDeleteModal(d.id, sportLabel);
+        });
+        body.appendChild(card);
       });
-      list.appendChild(card);
+
+      header.addEventListener('click', () => {
+        const chevron      = header.querySelector('.reg-group-chevron');
+        const isNowCollapsed = body.classList.toggle('collapsed');
+        chevron.classList.toggle('open', !isNowCollapsed);
+      });
+
+      group.appendChild(header);
+      group.appendChild(body);
+      list.appendChild(group);
     });
 
     if (wrap) {
