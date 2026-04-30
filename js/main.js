@@ -1739,9 +1739,11 @@ function renderDashboardFromData(docs, source) {
     return;
   }
 
-  // Extract block — flat is stored as "A-1104"
+  // Extract block — handles both "A-1104" (primary) and "Block B, Flat 1104" (partner) formats
   function extractBlock(flat) {
     if (!flat) return '?';
+    const match = flat.match(/^([A-Fa-f])-/) || flat.match(/Block\s*([A-Fa-f])/i);
+    if (match) return match[1].toUpperCase();
     const first = flat.charAt(0).toUpperCase();
     return (first >= 'A' && first <= 'Z') ? first : '?';
   }
