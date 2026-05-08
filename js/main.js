@@ -462,9 +462,16 @@ function getTrackEventsForCategory(ageCategory, grade) {
 function updateTrackEventsList() {
   if (!currentSport || currentSport.name !== 'Track Events') return;
   const grade  = document.getElementById('f-grade')?.value || null;
-  const events = getTrackEventsForCategory(currentAgeCategory, grade);
   const section = document.getElementById('track-events-section');
   const list    = document.getElementById('track-events-list');
+  const preSchoolGrades = ['Pre-Nursery', 'Nursery', 'KG-1', 'KG-2'];
+  if (currentAgeCategory === 'Under 18' && preSchoolGrades.includes(grade)) {
+    if (section) section.style.display = 'block';
+    if (list) list.innerHTML = '';
+    showToast('Pre-School kids are not eligible for track events.', true);
+    return;
+  }
+  const events = getTrackEventsForCategory(currentAgeCategory, grade);
   if (!events) { section.style.display = 'none'; list.innerHTML = ''; return; }
   section.style.display = 'block';
   list.innerHTML = events.map(e =>
