@@ -415,6 +415,18 @@ let activeFilters        = {
   grade: null,  subcategory: null
 };
 
+// ── Results state ──
+let resultsSummaryCache     = null;
+let resultsSummaryCacheTime = 0;
+const RESULTS_SUMMARY_CACHE_MS = 2 * 60 * 1000;
+
+let sportResultsCache = {};
+const SPORT_RESULTS_CACHE_MS = 5 * 60 * 1000;
+
+let currentExpandedSport   = null;
+let resultParticipantCount = 1;
+let resultEntryType        = 'single';
+
 // ── Subcategory icon map ──
 const SUBCATEGORY_ICONS = {
   'Singles':       { emoji: '👤', desc: 'Play solo' },
@@ -706,6 +718,11 @@ function renderTabBar() {
       <span class="tab-dot"></span>
       <span class="tab-label">Quiz</span>
     </div>` : ''}
+    <div class="tab-item" data-tab="results" onclick="switchTab('results')">
+      <span class="tab-icon">🏆</span>
+      <span class="tab-dot"></span>
+      <span class="tab-label">Results</span>
+    </div>
     <div class="tab-item" data-tab="mylist" onclick="switchTab('mylist')">
       <div class="tab-icon-wrap">
         <span class="tab-icon">📋</span>
@@ -786,6 +803,7 @@ function buildSportsGrid() {
   grid.innerHTML = '';
   SPORTS.forEach(sport => {
     if (sport.name === 'Carrom' && !graphVisibility.showCarromTile && !isAdmin()) return;
+    const hasResults = resultsSummaryCache?.bySport?.[sport.name]?.hasResults === true;
     const tile = document.createElement('div');
     tile.className = 'sport-tile';
     tile.innerHTML = `
@@ -793,10 +811,23 @@ function buildSportsGrid() {
         ? `<img src="${sport.image}" class="sport-emoji" style="width:36px;height:36px;object-fit:contain" alt="${sport.name}">`
         : `<span class="sport-emoji">${sport.emoji}</span>`}
       <span class="sport-label">${sport.name}</span>
+      ${hasResults ? '<div class="sport-trophy-badge">🏆</div>' : ''}
     `;
     tile.addEventListener('click', () => openSportDetails(sport));
     grid.appendChild(tile);
   });
+
+  // Silently populate results cache for trophy badges
+  if (!resultsSummaryCache) {
+    getDoc(doc(db, 'config', 'resultsSummary'))
+      .then(snap => {
+        if (snap.exists()) {
+          resultsSummaryCache     = snap.data();
+          resultsSummaryCacheTime = Date.now();
+          buildSportsGrid();
+        }
+      }).catch(() => {});
+  }
 }
 
 // ── Sport details ──
@@ -2148,7 +2179,7 @@ function setupAdminMaintenanceSection() {
 }
 
 // ── Navigation ──
-const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations', 'screen-admin', 'screen-quiz'];
+const TAB_SCREENS = ['screen-sports', 'screen-dashboard', 'screen-registrations', 'screen-admin', 'screen-quiz', 'screen-results'];
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -2163,6 +2194,7 @@ function showScreen(id) {
   if (id === 'screen-sports')        loadAnnouncementBanner();
   if (id === 'screen-quiz')          loadQuizScreen();
   if (id === 'screen-admin')         setupAdminMaintenanceSection();
+  if (id === 'screen-results')       loadResultsScreen();
 }
 
 function switchTab(tabName) {
@@ -2171,7 +2203,8 @@ function switchTab(tabName) {
     dashboard: 'screen-dashboard',
     mylist:    'screen-registrations',
     admin:     'screen-admin',
-    quiz:      'screen-quiz'
+    quiz:      'screen-quiz',
+    results:   'screen-results'
   };
   showScreen(screenMap[tabName]);
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
@@ -2245,6 +2278,7 @@ function openAdminSection(section) {
     'export-data':       'screen-admin-export-data',
     'all-registrations': 'screen-admin-all-registrations',
     'manage-users':      'screen-admin-manage-users',
+    'results-entry':     'screen-admin-results-entry',
   };
   const screenId = screenMap[section];
   if (!screenId) return;
@@ -2255,6 +2289,7 @@ function openAdminSection(section) {
   if (section === 'export-data')       loadExportData();
   if (section === 'all-registrations') loadAllRegistrations();
   if (section === 'manage-users')      loadAdminPanel();
+  if (section === 'results-entry')     loadResultsEntryForm();
 }
 
 function closeAdminSection() {
@@ -3514,6 +3549,944 @@ async function loadQuizLeaderboard() {
 }
 
 
+// ══════════════════════════════════════════════
+//  RESULTS FEATURE
+// ══════════════════════════════════════════════
+
+// ── Helper functions ──
+function getMedalColour(medalType) {
+  const m = (medalType || '').toLowerCase();
+  if (m === 'gold')   return '#FFD700';
+  if (m === 'silver') return '#C0C0C0';
+  if (m === 'bronze') return '#CD7F32';
+  return 'var(--accent)';
+}
+
+function getMedalEmoji(medalType) {
+  const m = (medalType || '').toLowerCase();
+  if (m === 'gold')   return '🥇';
+  if (m === 'silver') return '🥈';
+  if (m === 'bronze') return '🥉';
+  return '🏅';
+}
+
+function normalizeMedalKey(medalType) {
+  const m = (medalType || '').toLowerCase();
+  if (m === 'gold')   return 'Gold';
+  if (m === 'silver') return 'Silver';
+  if (m === 'bronze') return 'Bronze';
+  return null;
+}
+
+function extractResultBlock(flat) {
+  const match = (flat || '').match(/^([A-Ea-e])-/i) || (flat || '').match(/Block\s*([A-Ea-e])/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+// ── Load results screen ──
+async function loadResultsScreen() {
+  const exportWrap = document.getElementById('results-export-btn-wrap');
+  if (exportWrap) {
+    exportWrap.style.display = isAdmin() ? 'block' : 'none';
+  }
+
+  const now = Date.now();
+  if (resultsSummaryCache && (now - resultsSummaryCacheTime) < RESULTS_SUMMARY_CACHE_MS) {
+    renderResultsFromSummary(resultsSummaryCache);
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const summarySnap = await getDoc(doc(db, 'config', 'resultsSummary'));
+    if (summarySnap.exists()) {
+      resultsSummaryCache     = summarySnap.data();
+      resultsSummaryCacheTime = Date.now();
+      renderResultsFromSummary(resultsSummaryCache);
+    } else {
+      renderResultsEmpty();
+    }
+  } catch(err) {
+    console.error(err);
+    showToast('Could not load results', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── Render results from summary ──
+function renderResultsFromSummary(summary) {
+  const totalLine = document.getElementById('results-total-line');
+  if (totalLine) {
+    const total             = summary.totalMedals || 0;
+    const sportsWithResults = Object.values(summary.bySport || {}).filter(s => s.hasResults).length;
+    totalLine.textContent   = total > 0
+      ? `${total} medals across ${sportsWithResults} sports`
+      : 'No results yet';
+  }
+
+  renderMedalTallyChart(summary.byBlock || {}, 'results-chart-section', '🏅 Overall Medal Tally — All Sports');
+
+  const listEl = document.getElementById('results-sports-list');
+  listEl.innerHTML = '';
+
+  const bySport = summary.bySport || {};
+
+  const RESULTS_EXCLUDED_SPORTS = ['Kids Event (Under 6 years)', 'Open Mic', 'Carrom'];
+
+  SPORTS.filter(sport => !RESULTS_EXCLUDED_SPORTS.includes(sport.name)).forEach(sport => {
+    const sportData = bySport[sport.name] || { hasResults: false, count: 0 };
+    const safeId    = sport.name.replace(/\s+/g, '-');
+    const safeKey   = sport.name.replace(/\s+/g, '_');
+
+    const row       = document.createElement('div');
+    row.className   = 'results-sport-row' + (sportData.hasResults ? '' : ' no-results');
+    row.id          = 'sport-row-' + safeId;
+
+    row.innerHTML = `
+      <div class="results-sport-row-header"
+        onclick="${sportData.hasResults ? `toggleSportResults('${sport.name.replace(/'/g, "\\'")}')` : ''}">
+        <div class="results-sport-row-left">
+          <span class="results-sport-row-emoji">${sport.emoji}</span>
+          <div class="results-sport-row-info">
+            <div class="results-sport-row-name">${sport.name}</div>
+            <div class="results-sport-row-meta">
+              ${sportData.hasResults
+                ? sportData.count + ' result' + (sportData.count !== 1 ? 's published' : ' published')
+                : 'Results not yet announced'}
+            </div>
+          </div>
+        </div>
+        <div class="results-sport-row-right">
+          ${sportData.hasResults
+            ? `<span class="results-chevron" id="chevron-${safeKey}">▼</span>`
+            : `<span class="results-no-data">—</span>`}
+        </div>
+      </div>
+      <div class="results-sport-content" id="content-${safeId}" style="display:none;"></div>`;
+
+    listEl.appendChild(row);
+  });
+}
+
+// ── Toggle sport results expand/collapse ──
+async function toggleSportResults(sportName) {
+  const safeId    = sportName.replace(/\s+/g, '-');
+  const safeKey   = sportName.replace(/\s+/g, '_');
+  const contentEl = document.getElementById('content-' + safeId);
+  const chevronEl = document.getElementById('chevron-' + safeKey);
+
+  if (currentExpandedSport === sportName) {
+    contentEl.style.display = 'none';
+    if (chevronEl) chevronEl.textContent = '▼';
+    currentExpandedSport = null;
+    return;
+  }
+
+  if (currentExpandedSport) {
+    const prevSafeId  = currentExpandedSport.replace(/\s+/g, '-');
+    const prevSafeKey = currentExpandedSport.replace(/\s+/g, '_');
+    const prevContent = document.getElementById('content-' + prevSafeId);
+    const prevChevron = document.getElementById('chevron-' + prevSafeKey);
+    if (prevContent) prevContent.style.display = 'none';
+    if (prevChevron) prevChevron.textContent = '▼';
+  }
+
+  currentExpandedSport    = sportName;
+  contentEl.style.display = 'block';
+  if (chevronEl) chevronEl.textContent = '▲';
+
+  const rowEl = document.getElementById('sport-row-' + safeId);
+  if (rowEl) rowEl.scrollIntoView({ behavior: 'smooth' });
+
+  const now    = Date.now();
+  const cached = sportResultsCache[sportName];
+  if (cached && (now - cached.time) < SPORT_RESULTS_CACHE_MS) {
+    renderSportResults(sportName, cached.data, contentEl);
+    return;
+  }
+
+  contentEl.innerHTML = '<div class="results-sport-loading">Loading results...</div>';
+
+  try {
+    const q    = query(collection(db, 'results'), where('sport', '==', sportName));
+    const snap = await getDocs(q);
+
+    const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+
+    const MEDAL_RANK = { Gold: 1, Silver: 2, Bronze: 3 };
+    docs.sort((a, b) => {
+      const catA = (a.category || '') + '|' + (a.subCategory || '');
+      const catB = (b.category || '') + '|' + (b.subCategory || '');
+      if (catA !== catB) return catA.localeCompare(catB);
+      return (MEDAL_RANK[a.medalType] || 99) - (MEDAL_RANK[b.medalType] || 99);
+    });
+
+    sportResultsCache[sportName] = { data: docs, time: Date.now() };
+    renderSportResults(sportName, docs, contentEl);
+  } catch(err) {
+    console.error(err);
+    contentEl.innerHTML = '<div class="results-sport-loading">Error loading. Please try again.</div>';
+  }
+}
+
+// ── Render sport results in expanded panel ──
+function renderSportResults(sportName, docs, container) {
+  if (!docs || docs.length === 0) {
+    container.innerHTML = '<div class="results-sport-loading">No results found.</div>';
+    return;
+  }
+
+  const displayDocs = docs;
+
+  const cardsHtml = displayDocs.map(d => {
+    const medalColour  = getMedalColour(d.medalType);
+    const medalEmoji   = getMedalEmoji(d.medalType);
+    const categoryLine = [d.category, d.subCategory].filter(Boolean).join(' · ');
+
+    const participantRows = (d.participants || []).map((p, i) => {
+      const nameDisplay = p.phone
+        ? `<a href="https://wa.me/91${p.phone}" target="_blank" class="result-winner-wa-link">${p.name || '—'}</a>`
+        : `<span>${p.name || '—'}</span>`;
+
+      return `
+        <div class="result-participant-row">
+          ${d.entryType === 'multiple'
+            ? `<div class="result-participant-num">${i + 1}</div>` : ''}
+          <div class="result-participant-info">
+            <div class="result-participant-name">${nameDisplay}</div>
+            <div class="result-participant-detail">
+              ${p.block && p.flatNumber ? p.block + ' - ' + p.flatNumber : (p.block || p.flatNumber || '')}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const adminButtons = isAdmin() ? `
+      <div class="result-admin-actions">
+        <button class="result-edit-btn"
+          onclick="startEditResult('${d.id}', '${sportName.replace(/'/g, "\\'")}')">✏️ Edit</button>
+        <button class="result-delete-btn"
+          onclick="confirmDeleteResult('${d.id}', '${sportName.replace(/'/g, "\\'")}')">🗑️ Delete</button>
+      </div>` : '';
+
+    return `
+      <div class="result-entry-card" id="result-card-${d.id}">
+        <div class="result-entry-header">
+          <div class="result-entry-header-left">
+            ${categoryLine ? `<div class="result-category-line">${categoryLine}</div>` : ''}
+            <div class="result-medal-type-label" style="color:${medalColour}">
+              ${medalEmoji} ${d.medalType}
+            </div>
+          </div>
+          ${adminButtons}
+        </div>
+        <div class="result-participants-section">${participantRows}</div>
+        ${d.note ? `<div class="result-note">💬 ${d.note}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="sport-results-inner">
+      <div class="sport-result-cards">${cardsHtml}</div>
+    </div>`;
+}
+
+// ── Medal tally chart renderer ──
+function renderMedalTallyChart(byBlock, containerId, title) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const blocks  = ['A', 'B', 'C', 'D', 'E'];
+  const CHART_H = 72;
+
+  let maxVal = 0;
+  blocks.forEach(b => {
+    const d   = byBlock[b] || {};
+    const sum = (d.Gold || 0) + (d.Silver || 0) + (d.Bronze || 0);
+    if (sum > maxVal) maxVal = sum;
+  });
+  if (maxVal === 0) maxVal = 1;
+
+  // Bars only — no labels inside this row
+  const barsRow = blocks.map(block => {
+    const d       = byBlock[block] || { Gold: 0, Silver: 0, Bronze: 0 };
+    const g       = d.Gold   || 0;
+    const s       = d.Silver || 0;
+    const b       = d.Bronze || 0;
+    const total   = g + s + b;
+    const isEmpty = total === 0;
+
+    const gH = isEmpty ? 3 : Math.max((g / maxVal) * CHART_H, g > 0 ? 5 : 0);
+    const sH = isEmpty ? 3 : Math.max((s / maxVal) * CHART_H, s > 0 ? 5 : 0);
+    const bH = isEmpty ? 3 : Math.max((b / maxVal) * CHART_H, b > 0 ? 5 : 0);
+
+    return `
+      <div class="chart-block-col">
+        <div class="medal-bar medal-bar-gold${isEmpty ? ' medal-bar-empty' : ''}" style="height:${gH}px"></div>
+        <div class="medal-bar medal-bar-silver${isEmpty ? ' medal-bar-empty' : ''}" style="height:${sH}px"></div>
+        <div class="medal-bar medal-bar-bronze${isEmpty ? ' medal-bar-empty' : ''}" style="height:${bH}px"></div>
+      </div>`;
+  }).join('');
+
+  // Labels row — rendered separately below the bars
+  const labelsRow = blocks.map(block => {
+    const total   = (byBlock[block]?.Gold || 0) + (byBlock[block]?.Silver || 0) + (byBlock[block]?.Bronze || 0);
+    const isEmpty = total === 0;
+    return `<div class="chart-col-label${isEmpty ? ' chart-label-empty' : ''}">${block}</div>`;
+  }).join('');
+
+  // Totals row — rendered separately below labels
+  const totalsRow = blocks.map(block => {
+    const total = (byBlock[block]?.Gold || 0) + (byBlock[block]?.Silver || 0) + (byBlock[block]?.Bronze || 0);
+    return `<div class="chart-col-total">${total > 0 ? total : ''}</div>`;
+  }).join('');
+
+  const tallyRows = blocks
+    .map(b => ({
+      block:  b,
+      gold:   byBlock[b]?.Gold   || 0,
+      silver: byBlock[b]?.Silver || 0,
+      bronze: byBlock[b]?.Bronze || 0,
+      total:  (byBlock[b]?.Gold || 0) + (byBlock[b]?.Silver || 0) + (byBlock[b]?.Bronze || 0)
+    }))
+    .filter(r => r.total > 0)
+    .sort((a, b) =>
+      a.gold !== b.gold ? b.gold - a.gold :
+      a.silver !== b.silver ? b.silver - a.silver :
+      b.bronze - a.bronze
+    );
+
+  const grandGold   = tallyRows.reduce((s, r) => s + r.gold,   0);
+  const grandSilver = tallyRows.reduce((s, r) => s + r.silver, 0);
+  const grandBronze = tallyRows.reduce((s, r) => s + r.bronze, 0);
+  const grandTotal  = tallyRows.reduce((s, r) => s + r.total,  0);
+
+  const tallyHtml = tallyRows.length > 0 ? `
+    <div class="medal-tally-table">
+      <div class="tally-row tally-header">
+        <div class="tally-col-rank">#</div>
+        <div class="tally-col-block">Block</div>
+        <div class="tally-col-medal" style="color:#FFD700">🥇</div>
+        <div class="tally-col-medal" style="color:#C0C0C0">🥈</div>
+        <div class="tally-col-medal" style="color:#CD7F32">🥉</div>
+        <div class="tally-col-total">Total</div>
+      </div>
+      ${tallyRows.map((r, i) => `
+        <div class="tally-row tally-data">
+          <div class="tally-col-rank">${i + 1}</div>
+          <div class="tally-col-block">Block ${r.block}</div>
+          <div class="tally-col-medal tally-gold">${r.gold || '—'}</div>
+          <div class="tally-col-medal tally-silver">${r.silver || '—'}</div>
+          <div class="tally-col-medal tally-bronze">${r.bronze || '—'}</div>
+          <div class="tally-col-total">${r.total}</div>
+        </div>`).join('')}
+      <div class="tally-row tally-footer">
+        <div class="tally-col-rank"></div>
+        <div class="tally-col-block">Total</div>
+        <div class="tally-col-medal tally-gold">${grandGold}</div>
+        <div class="tally-col-medal tally-silver">${grandSilver}</div>
+        <div class="tally-col-medal tally-bronze">${grandBronze}</div>
+        <div class="tally-col-total">${grandTotal}</div>
+      </div>
+    </div>` : '';
+
+  container.innerHTML = `
+    <div class="medal-chart-card">
+      <div class="chart-card-title">${title}</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot legend-dot-gold"></div>Gold</div>
+        <div class="legend-item"><div class="legend-dot legend-dot-silver"></div>Silver</div>
+        <div class="legend-item"><div class="legend-dot legend-dot-bronze"></div>Bronze</div>
+      </div>
+      <div class="chart-bars-area">${barsRow}</div>
+      <div class="chart-block-labels">${labelsRow}</div>
+      <div class="chart-block-totals">${totalsRow}</div>
+      ${tallyHtml}
+    </div>`;
+}
+
+// ── Empty state ──
+function renderResultsEmpty() {
+  const chartEl = document.getElementById('results-chart-section');
+  const listEl  = document.getElementById('results-sports-list');
+  if (chartEl) chartEl.innerHTML = '';
+  if (listEl) listEl.innerHTML = `
+    <div class="results-empty-state">
+      <div class="results-empty-emoji">🏆</div>
+      <div class="results-empty-title">No Results Yet</div>
+      <div class="results-empty-sub">
+        Results will appear here as events conclude. Check back after June 5th!
+      </div>
+    </div>`;
+}
+
+
+// ── Admin: edit result ──
+async function startEditResult(docId, sportName) {
+  const cached    = sportResultsCache[sportName];
+  let resultDoc   = null;
+  if (cached) resultDoc = cached.data.find(d => d.id === docId);
+
+  if (!resultDoc) { showToast('Could not load result', true); return; }
+
+  const card = document.getElementById('result-card-' + docId);
+  if (!card) return;
+
+  const medalColour = getMedalColour(resultDoc.medalType);
+
+  const participantForms = (resultDoc.participants || []).map((p, i) => `
+    <div class="participant-entry-card">
+      <div class="participant-entry-num">Player ${i + 1}</div>
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-input edit-p-name-${docId}" value="${(p.name || '').replace(/"/g, '&quot;')}" placeholder="Full Name"/>
+      </div>
+      <div class="form-row-two">
+        <div class="form-group">
+          <label class="form-label">Block</label>
+          <select class="form-input edit-p-block-${docId}">
+            ${['A','B','C','D','E'].map(b => `<option value="${b}"${p.block === b ? ' selected' : ''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Flat No</label>
+          <input class="form-input edit-p-flat-${docId}" value="${p.flatNumber || ''}" type="number" maxlength="4" placeholder="e.g. 101"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone (optional)</label>
+        <input class="form-input edit-p-phone-${docId}" value="${p.phone || ''}" type="tel" maxlength="10" placeholder="10-digit (optional)"/>
+      </div>
+    </div>`).join('');
+
+  card.innerHTML = `
+    <div class="result-edit-form">
+      <div class="result-edit-title" style="color:${medalColour}">
+        ✏️ Editing: ${resultDoc.sport} — ${resultDoc.medalType}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <input class="form-input" id="edit-cat-${docId}" value="${(resultDoc.category || '').replace(/"/g, '&quot;')}" placeholder="e.g. Open, Under 18"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sub Category</label>
+        <input class="form-input" id="edit-subcat-${docId}" value="${(resultDoc.subCategory || '').replace(/"/g, '&quot;')}" placeholder="e.g. Doubles, Singles"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Medal Type *</label>
+        <select class="form-input" id="edit-medal-${docId}">
+          <option value="">— Select Medal Type —</option>
+          <option value="Gold" ${resultDoc.medalType === 'Gold' ? 'selected' : ''}>🥇 Gold</option>
+          <option value="Silver" ${resultDoc.medalType === 'Silver' ? 'selected' : ''}>🥈 Silver</option>
+          <option value="Bronze" ${resultDoc.medalType === 'Bronze' ? 'selected' : ''}>🥉 Bronze</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Winner Details</label>
+        ${participantForms}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <input class="form-input" id="edit-note-${docId}" value="${(resultDoc.note || '').replace(/"/g, '&quot;')}" placeholder="e.g. Won by 5 runs"/>
+      </div>
+      <div class="edit-action-row">
+        <button class="btn-secondary" onclick="cancelEditResult('${docId}','${sportName.replace(/'/g, "\\'")}')">Cancel</button>
+        <button class="btn-primary" onclick="saveEditResult('${docId}','${sportName.replace(/'/g, "\\'")}')">💾 Update</button>
+      </div>
+    </div>`;
+}
+
+async function saveEditResult(docId, sportName) {
+  const category    = document.getElementById('edit-cat-'    + docId)?.value.trim() || '';
+  const subCategory = document.getElementById('edit-subcat-' + docId)?.value.trim() || '';
+  const medalType   = document.getElementById('edit-medal-'  + docId)?.value.trim() || '';
+  const note        = document.getElementById('edit-note-'   + docId)?.value.trim() || '';
+
+  if (!medalType) { showToast('Medal type cannot be empty', true); return; }
+
+  const nameEls  = document.querySelectorAll('.edit-p-name-'  + docId);
+  const blockEls = document.querySelectorAll('.edit-p-block-' + docId);
+  const flatEls  = document.querySelectorAll('.edit-p-flat-'  + docId);
+  const phoneEls = document.querySelectorAll('.edit-p-phone-' + docId);
+
+  const participants = [];
+  nameEls.forEach((el, i) => {
+    participants.push({
+      name:       el.value.trim(),
+      block:      blockEls[i]?.value || 'A',
+      flatNumber: flatEls[i]?.value.trim() || '',
+      phone:      phoneEls[i]?.value.trim() || ''
+    });
+  });
+
+  if (!participants[0]?.name) { showToast('Please enter at least one winner name', true); return; }
+  if (participants.some(p => !p.flatNumber)) { showToast('Please enter flat number for all winners', true); return; }
+
+  showLoading(true);
+  try {
+    await setDoc(doc(db, 'results', docId),
+      { category, subCategory, medalType, participants, note, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+
+    sportResultsCache[sportName] = null;
+    resultsSummaryCache          = null;
+    resultsSummaryCacheTime      = 0;
+
+    await rebuildResultsSummary();
+    showToast(medalType + ' result updated!');
+
+    currentExpandedSport = null;
+    await loadResultsScreen();
+    await toggleSportResults(sportName);
+  } catch(err) {
+    console.error(err);
+    showToast('Error updating result', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function cancelEditResult(docId, sportName) {
+  const cached = sportResultsCache[sportName];
+  if (cached) {
+    const safeId    = sportName.replace(/\s+/g, '-');
+    const container = document.getElementById('content-' + safeId);
+    if (container) renderSportResults(sportName, cached.data, container);
+  }
+}
+
+// ── Admin: delete result ──
+function confirmDeleteResult(docId, sportName) {
+  showConfirmModal(
+    '🗑️ Delete Result',
+    'Are you sure you want to delete this result? This cannot be undone.',
+    () => executeDeleteResult(docId, sportName)
+  );
+}
+
+async function executeDeleteResult(docId, sportName) {
+  showLoading(true);
+  try {
+    await deleteDoc(doc(db, 'results', docId));
+
+    sportResultsCache[sportName] = null;
+    resultsSummaryCache          = null;
+    resultsSummaryCacheTime      = 0;
+
+    await rebuildResultsSummary();
+    showToast('Result deleted');
+
+    currentExpandedSport = null;
+    await loadResultsScreen();
+  } catch(err) {
+    console.error(err);
+    showToast('Error deleting result', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── Confirm modal ──
+function showConfirmModal(title, msg, onConfirm) {
+  const existing = document.getElementById('confirm-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id        = 'confirm-modal';
+  modal.className = 'confirm-modal-overlay';
+  modal.innerHTML = `
+    <div class="confirm-modal-card" onclick="event.stopPropagation()">
+      <div class="confirm-modal-title">${title}</div>
+      <div class="confirm-modal-message">${msg}</div>
+      <div class="confirm-modal-actions">
+        <button class="btn-secondary" onclick="document.getElementById('confirm-modal').remove()">Cancel</button>
+        <button class="btn-danger" id="confirm-ok-btn">Yes, Delete</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  document.getElementById('confirm-ok-btn').addEventListener('click', () => { modal.remove(); onConfirm(); });
+  modal.addEventListener('click', () => modal.remove());
+}
+
+// ── Results summary update on save (fast increment) ──
+async function updateResultsSummaryOnSave(participants, medalType, sportName) {
+  try {
+    const summaryRef = doc(db, 'config', 'resultsSummary');
+    const snap       = await getDoc(summaryRef);
+
+    let summary = snap.exists() ? snap.data() : {
+      byBlock: {
+        A: { Gold: 0, Silver: 0, Bronze: 0 },
+        B: { Gold: 0, Silver: 0, Bronze: 0 },
+        C: { Gold: 0, Silver: 0, Bronze: 0 },
+        D: { Gold: 0, Silver: 0, Bronze: 0 },
+        E: { Gold: 0, Silver: 0, Bronze: 0 }
+      },
+      bySport:      {},
+      totalMedals:  0,
+      lastUpdated:  null
+    };
+
+    const mKey = normalizeMedalKey(medalType);
+
+    if (mKey) {
+      (participants || []).forEach(p => {
+        const b = (p.block || '').toUpperCase();
+        if (summary.byBlock[b]) {
+          summary.byBlock[b][mKey] = (summary.byBlock[b][mKey] || 0) + 1;
+          summary.totalMedals      = (summary.totalMedals || 0) + 1;
+        }
+      });
+    }
+
+    if (!summary.bySport[sportName]) summary.bySport[sportName] = { hasResults: false, count: 0 };
+    summary.bySport[sportName].count      = (summary.bySport[sportName].count || 0) + 1;
+    summary.bySport[sportName].hasResults = true;
+    summary.lastUpdated                   = serverTimestamp();
+
+    await setDoc(summaryRef, summary);
+    resultsSummaryCache     = null;
+    resultsSummaryCacheTime = 0;
+  } catch(err) {
+    console.error('Summary update failed:', err);
+  }
+}
+
+// ── Rebuild results summary from scratch ──
+async function rebuildResultsSummary() {
+  try {
+    const snap = await getDocs(collection(db, 'results'));
+
+    const summary = {
+      byBlock: {
+        A: { Gold: 0, Silver: 0, Bronze: 0 },
+        B: { Gold: 0, Silver: 0, Bronze: 0 },
+        C: { Gold: 0, Silver: 0, Bronze: 0 },
+        D: { Gold: 0, Silver: 0, Bronze: 0 },
+        E: { Gold: 0, Silver: 0, Bronze: 0 }
+      },
+      bySport:     {},
+      totalMedals: 0,
+      lastUpdated: serverTimestamp()
+    };
+
+    snap.forEach(d => {
+      const data  = d.data();
+      const sport = data.sport || '';
+      const mKey  = normalizeMedalKey(data.medalType);
+
+      if (mKey) {
+        (data.participants || []).forEach(p => {
+          const b = (p.block || '').toUpperCase();
+          if (summary.byBlock[b]) {
+            summary.byBlock[b][mKey] = (summary.byBlock[b][mKey] || 0) + 1;
+            summary.totalMedals++;
+          }
+        });
+      }
+
+      if (sport) {
+        if (!summary.bySport[sport]) summary.bySport[sport] = { hasResults: false, count: 0 };
+        summary.bySport[sport].count++;
+        summary.bySport[sport].hasResults = true;
+      }
+    });
+
+    await setDoc(doc(db, 'config', 'resultsSummary'), summary);
+    resultsSummaryCache     = null;
+    resultsSummaryCacheTime = 0;
+  } catch(err) {
+    console.error('Rebuild summary failed:', err);
+  }
+}
+
+// ── Admin: results entry form ──
+function loadResultsEntryForm() {
+  const select = document.getElementById('res-sport-select');
+  if (select && select.options.length <= 1) {
+    SPORTS.forEach(s => {
+      const opt   = document.createElement('option');
+      opt.value   = s.name;
+      opt.textContent = s.emoji + ' ' + s.name;
+      select.appendChild(opt);
+    });
+  }
+  clearResultForm();
+}
+
+function selectResultEntryType(type) {
+  resultEntryType = type;
+
+  const singleBtn   = document.getElementById('entry-type-single');
+  const multipleBtn = document.getElementById('entry-type-multiple');
+  if (singleBtn)   singleBtn.classList.toggle('selected',   type === 'single');
+  if (multipleBtn) multipleBtn.classList.toggle('selected', type === 'multiple');
+
+  const addBtn = document.getElementById('res-add-player-btn');
+  if (addBtn) addBtn.style.display = type === 'multiple' ? 'block' : 'none';
+
+  if (type === 'single') {
+    const container = document.getElementById('res-participants-container');
+    if (container) {
+      const cards = container.querySelectorAll('.participant-entry-card');
+      for (let i = cards.length - 1; i > 0; i--) cards[i].remove();
+      resultParticipantCount = 1;
+    }
+  }
+}
+
+function addResultParticipant() {
+  resultParticipantCount++;
+  const container = document.getElementById('res-participants-container');
+  if (!container) return;
+
+  const idx  = resultParticipantCount;
+  const card = document.createElement('div');
+  card.className = 'participant-entry-card';
+  card.id        = 'res-participant-' + idx;
+  card.innerHTML = `
+    <div class="participant-entry-header">
+      <div class="participant-entry-num">Player ${idx}</div>
+      <button class="participant-remove-btn" onclick="removeResultParticipant(${idx})">✕ Remove</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Full Name *</label>
+      <input class="form-input res-p-name" placeholder="Full Name"/>
+    </div>
+    <div class="form-row-two">
+      <div class="form-group">
+        <label class="form-label">Block</label>
+        <select class="form-input res-p-block">
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+          <option value="E">E</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Flat No</label>
+        <input class="form-input res-p-flat" type="number" maxlength="4" placeholder="e.g. 101"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Phone (optional)</label>
+      <input class="form-input res-p-phone" type="tel" maxlength="10" placeholder="10-digit (optional)"/>
+    </div>`;
+
+  container.appendChild(card);
+}
+
+function removeResultParticipant(idx) {
+  const card = document.getElementById('res-participant-' + idx);
+  if (card) { card.remove(); resultParticipantCount--; }
+}
+
+async function saveResult() {
+  const sportName  = document.getElementById('res-sport-select')?.value;
+  const medalType  = document.getElementById('res-medal-type')?.value.trim();
+  const category   = document.getElementById('res-category')?.value.trim()    || '';
+  const subCategory = document.getElementById('res-subcategory')?.value.trim() || '';
+  const note       = document.getElementById('res-note')?.value.trim()         || '';
+
+  if (!sportName)  { showToast('Please select a sport', true); return; }
+  if (!medalType)  { showToast('Please enter medal type', true); return; }
+
+  const sport      = SPORTS.find(s => s.name === sportName);
+  const sportEmoji = sport?.emoji || '🏅';
+
+  const nameEls  = document.querySelectorAll('.res-p-name');
+  const blockEls = document.querySelectorAll('.res-p-block');
+  const flatEls  = document.querySelectorAll('.res-p-flat');
+  const phoneEls = document.querySelectorAll('.res-p-phone');
+
+  const participants = [];
+  nameEls.forEach((el, i) => {
+    const name = el.value.trim();
+    if (name) {
+      participants.push({
+        name,
+        block:      blockEls[i]?.value || 'A',
+        flatNumber: flatEls[i]?.value.trim()  || '',
+        phone:      phoneEls[i]?.value.trim() || ''
+      });
+    }
+  });
+
+  if (participants.length === 0) { showToast('Please enter at least one winner name', true); return; }
+  if (participants.some(p => !p.flatNumber)) { showToast('Please enter flat number for all winners', true); return; }
+
+  showLoading(true);
+  try {
+    await addDoc(collection(db, 'results'), {
+      sport: sportName,
+      sportEmoji,
+      category,
+      subCategory,
+      medalType,
+      entryType: resultEntryType,
+      participants,
+      note,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    await updateResultsSummaryOnSave(participants, medalType, sportName);
+    showToast(`${sportName} ${medalType} result saved!`);
+    clearResultForm(true);
+  } catch(err) {
+    console.error(err);
+    showToast('Error saving result', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function clearResultForm(keepCategoryFields = false) {
+  const alwaysClear = ['res-sport-select', 'res-medal-type', 'res-note'];
+  const conditionalClear = ['res-category', 'res-subcategory'];
+
+  alwaysClear.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  if (!keepCategoryFields) {
+    conditionalClear.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  }
+
+  resultParticipantCount = 1;
+  resultEntryType        = 'single';
+
+  const container = document.getElementById('res-participants-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="participant-entry-card" id="res-participant-1">
+        <div class="participant-entry-num">Player 1</div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input res-p-name" placeholder="Full Name"/>
+        </div>
+        <div class="form-row-two">
+          <div class="form-group">
+            <label class="form-label">Block</label>
+            <select class="form-input res-p-block">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+              <option value="E">E</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Flat No</label>
+            <input class="form-input res-p-flat" type="number" maxlength="4" placeholder="e.g. 101"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone (optional)</label>
+          <input class="form-input res-p-phone" type="tel" maxlength="10" placeholder="10-digit (optional)"/>
+        </div>
+      </div>`;
+  }
+
+  selectResultEntryType('single');
+  document.getElementById('res-add-player-btn')?.style.setProperty('display', 'none');
+}
+
+function onResultSportChange() {
+  ['res-category', 'res-subcategory'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+// ── Export results PDF (admin only) ──
+async function exportResultsPDF() {
+  showLoading(true);
+  showToast('Preparing PDF...');
+
+  try {
+    const snap    = await getDocs(collection(db, 'results'));
+    const allDocs = [];
+    snap.forEach(d => allDocs.push({ id: d.id, ...d.data() }));
+
+    if (allDocs.length === 0) { showToast('No results to export', true); showLoading(false); return; }
+
+    const grouped = {};
+    SPORTS.forEach(s => { grouped[s.name] = { emoji: s.emoji, entries: [] }; });
+    allDocs.forEach(d => { if (grouped[d.sport]) grouped[d.sport].entries.push(d); });
+    Object.values(grouped).forEach(g => {
+      g.entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    });
+
+    const sportsHtml = SPORTS
+      .filter(s => grouped[s.name].entries.length > 0)
+      .map(s => {
+        const entriesHtml = grouped[s.name].entries.map(e => {
+          const participants = (e.participants || [])
+            .map(p => `${p.name || '—'} (Block ${p.block} · ${p.flatNumber})`).join(', ');
+          const catLine = [e.category, e.subCategory].filter(Boolean).join(' · ');
+          return `
+            <tr>
+              <td style="color:${getMedalColour(e.medalType)};font-weight:700;">
+                ${getMedalEmoji(e.medalType)} ${e.medalType}
+              </td>
+              <td>${catLine || '—'}</td>
+              <td>${participants}</td>
+              <td>${e.note || '—'}</td>
+            </tr>`;
+        }).join('');
+        return `
+          <div class="sport-section">
+            <h3>${s.emoji} ${s.name}</h3>
+            <table>
+              <thead><tr><th>Medal</th><th>Category</th><th>Winners</th><th>Note</th></tr></thead>
+              <tbody>${entriesHtml}</tbody>
+            </table>
+          </div>`;
+      }).join('');
+
+    const printDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Avriti Olympics 2026 — Results</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#1a1a2e;}
+    h1{font-size:22px;color:#1a1a2e;margin-bottom:4px;}
+    h2{font-size:13px;color:#666;font-weight:normal;margin-bottom:20px;}
+    h3{font-size:15px;color:#1a1a2e;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #f0a500;}
+    table{width:100%;border-collapse:collapse;margin-bottom:12px;}
+    th{background:#1a1a2e;color:#fff;padding:7px 8px;text-align:left;font-size:11px;}
+    td{padding:7px 8px;border-bottom:1px solid #eee;vertical-align:top;font-size:11px;}
+    tr:nth-child(even) td{background:#f9f9f9;}
+    .footer{margin-top:24px;font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;padding-top:10px;}
+    @media print{body{margin:10px;}h3{page-break-inside:avoid;}}
+  </style>
+</head>
+<body>
+  <h1>🏆 Avriti Olympics 2026</h1>
+  <h2>Official Results Booklet · Generated: ${printDate}</h2>
+  ${sportsHtml}
+  <div class="footer">Avriti Olympics 2026 · Generated by Sports Registration App</div>
+  <script>window.print();<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); }
+    else showToast('Allow popups to download PDF', true);
+  } catch(err) {
+    console.error(err);
+    showToast('Error generating PDF', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
 // ── Expose functions to HTML onclick handlers ──
 window.saveProfile          = saveProfile;
 window.submitRegistration   = submitRegistration;
@@ -3554,3 +4527,17 @@ window.toggleFilter            = toggleFilter;
 window.clearAllFilters         = clearAllFilters;
 window.downloadParticipants    = downloadParticipants;
 window.rebuildSummaryFromScratch = rebuildSummaryFromScratch;
+
+// Results feature
+window.toggleSportResults       = toggleSportResults;
+window.selectResultEntryType    = selectResultEntryType;
+window.addResultParticipant     = addResultParticipant;
+window.removeResultParticipant  = removeResultParticipant;
+window.saveResult               = saveResult;
+window.clearResultForm          = clearResultForm;
+window.onResultSportChange      = onResultSportChange;
+window.startEditResult          = startEditResult;
+window.saveEditResult           = saveEditResult;
+window.cancelEditResult         = cancelEditResult;
+window.confirmDeleteResult      = confirmDeleteResult;
+window.exportResultsPDF         = exportResultsPDF;

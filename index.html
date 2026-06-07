@@ -601,6 +601,11 @@
         <div class="admin-tile-title">Manage Users</div>
         <div class="admin-tile-sub">Assign and remove PIC roles</div>
       </div>
+      <div class="admin-control-tile" onclick="openAdminSection('results-entry')">
+        <span class="admin-tile-icon">🏅</span>
+        <div class="admin-tile-title">Enter Results</div>
+        <div class="admin-tile-sub">Publish event winners</div>
+      </div>
     </div>
     <div class="made-with-love">
       Made by Ritesh. Reach out to me on <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">WhatsApp</a> for any assistance or feedback — happy to help!
@@ -710,6 +715,115 @@
       <div class="made-with-love">
         Made by Ritesh. Reach out to me on <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">WhatsApp</a> for any assistance or feedback — happy to help!
         <div style="margin-top:6px;font-size:11px;color:var(--text3);line-height:1.5">🔒 <strong>Privacy &amp; Data Safety:</strong> All the data entered in this webapp is saved in the creator's private Google account and NOT in any 3rd party server. All the data will be deleted after the event concludes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: RESULTS -->
+  <div id="screen-results" class="screen">
+    <div class="results-header">
+      <div class="results-header-left">
+        <div class="results-header-title">🏆 Results</div>
+        <div class="results-header-sub">Avriti Olympics 2026</div>
+      </div>
+      <div id="results-export-btn-wrap" style="display:none;">
+        <button class="results-export-btn" onclick="exportResultsPDF()">📄 Export PDF</button>
+      </div>
+    </div>
+    <div class="results-filter-bar">
+      <div class="results-total-line" id="results-total-line"></div>
+    </div>
+    <div id="results-chart-section"></div>
+    <div id="results-sports-list" class="results-sports-list"></div>
+    <div class="made-with-love">
+      Made with ❤️ by Ritesh. Reach out on <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">WhatsApp</a> for help.
+    </div>
+  </div>
+
+  <!-- SCREEN: ADMIN > RESULTS ENTRY -->
+  <div id="screen-admin-results-entry" class="screen">
+    <div class="form-topbar">
+      <button class="back-btn" onclick="closeAdminSection()">← Back</button>
+      <div class="sport-header"><span class="sport-header-name">Enter Results</span></div>
+    </div>
+    <div class="screen-inner">
+      <div class="card">
+        <h2 class="card-title">🏅 Publish a Result</h2>
+        <p class="card-desc">Enter the winner details for a sport and medal type.</p>
+        <div class="form-group">
+          <label class="form-label">Sport Name *</label>
+          <select id="res-sport-select" class="form-input" onchange="onResultSportChange()">
+            <option value="">Select a sport...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input id="res-category" class="form-input" placeholder="e.g. Open, Under 18, Men, Women"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub Category (optional)</label>
+          <input id="res-subcategory" class="form-input" placeholder="e.g. Singles, Doubles — leave blank if not applicable"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Medal Type *</label>
+          <select id="res-medal-type" class="form-input">
+            <option value="">— Select Medal Type —</option>
+            <option value="Gold">🥇 Gold</option>
+            <option value="Silver">🥈 Silver</option>
+            <option value="Bronze">🥉 Bronze</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Entry Type</label>
+          <div class="entry-type-row">
+            <button class="entry-type-btn selected" id="entry-type-single" onclick="selectResultEntryType('single')">👤 Single</button>
+            <button class="entry-type-btn" id="entry-type-multiple" onclick="selectResultEntryType('multiple')">👥 Multiple</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Winner Details</label>
+          <div id="res-participants-container">
+            <div class="participant-entry-card" id="res-participant-1">
+              <div class="participant-entry-num">Player 1</div>
+              <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input class="form-input res-p-name" placeholder="Full Name"/>
+              </div>
+              <div class="form-row-two">
+                <div class="form-group">
+                  <label class="form-label">Block</label>
+                  <select class="form-input res-p-block">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Flat No</label>
+                  <input class="form-input res-p-flat" type="number" maxlength="4" placeholder="e.g. 101"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone (optional)</label>
+                <input class="form-input res-p-phone" type="tel" maxlength="10" placeholder="10-digit (optional)"/>
+              </div>
+            </div>
+          </div>
+          <button class="add-participant-btn" id="res-add-player-btn" style="display:none;" onclick="addResultParticipant()">+ Add Another Player</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note (optional)</label>
+          <input id="res-note" class="form-input" placeholder="e.g. Won by 5 runs, 21-18 21-15"/>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn-secondary" style="flex:1" onclick="clearResultForm()">Clear Form</button>
+          <button class="btn-primary" style="flex:2" onclick="saveResult()">💾 Save Result</button>
+        </div>
+      </div>
+      <div class="made-with-love">
+        Made by Ritesh. Reach out to me on <a href="https://wa.me/919945648475" target="_blank" class="footer-wa-link">WhatsApp</a> for any assistance or feedback — happy to help!
       </div>
     </div>
   </div>
