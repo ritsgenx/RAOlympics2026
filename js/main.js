@@ -2744,7 +2744,7 @@ function renderAllRegs(regs) {
 
 // ── Admin panel ──
 let _adminAllUsers = [];
-let _adminSortMode = 'flat';
+let _adminSortMode = 'date';
 let _adminPanelCache = null;
 let _adminPanelCacheTime = 0;
 const ADMIN_PANEL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
@@ -2767,9 +2767,9 @@ async function loadAdminPanel() {
   const listEl = document.getElementById('admin-user-list');
   const searchEl = document.getElementById('admin-search');
   if (searchEl) searchEl.value = '';
-  _adminSortMode = 'flat';
-  const flatRadio = document.querySelector('input[name="admin-sort"][value="flat"]');
-  if (flatRadio) flatRadio.checked = true;
+  _adminSortMode = 'date';
+  const dateRadio = document.querySelector('input[name="admin-sort"][value="date"]');
+  if (dateRadio) dateRadio.checked = true;
 
   // Inject cache status bar if not already present
   let statusEl = document.getElementById('admin-panel-cache-status');
