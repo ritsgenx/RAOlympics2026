@@ -3165,6 +3165,19 @@ textarea.edit-field-input {
   color: var(--text);
   margin-bottom: 4px;
 }
+.result-category-group {
+  margin-bottom: 18px;
+}
+.result-category-group-header {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 6px 0 8px 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
 .result-medal-type-label {
   font-size: 12px;
   font-weight: 600;

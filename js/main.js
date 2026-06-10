@@ -3738,59 +3738,69 @@ function renderSportResults(sportName, docs, container) {
     return;
   }
 
-  const displayDocs = docs;
+  // Group by category + subCategory; preserve first-appearance order of groups
+  const groupMap = new Map();
+  docs.forEach(d => {
+    const key = [d.category, d.subCategory].filter(Boolean).join(' · ') || '';
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key).push(d);
+  });
 
-  const cardsHtml = displayDocs.map(d => {
-    const medalColour  = getMedalColour(d.medalType);
-    const medalEmoji   = getMedalEmoji(d.medalType);
-    const categoryLine = [d.category, d.subCategory].filter(Boolean).join(' · ');
+  const groupsHtml = Array.from(groupMap.entries()).map(([groupKey, groupDocs]) => {
+    const cardsHtml = groupDocs.map(d => {
+      const medalColour = getMedalColour(d.medalType);
+      const medalEmoji  = getMedalEmoji(d.medalType);
 
-    const participantRows = (d.participants || []).map((p, i) => {
-      const nameDisplay = p.phone
-        ? `<a href="https://wa.me/91${p.phone}" target="_blank" class="result-winner-wa-link">${p.name || '—'}</a>`
-        : `<span>${p.name || '—'}</span>`;
+      const participantRows = (d.participants || []).map((p, i) => {
+        const nameDisplay = p.phone
+          ? `<a href="https://wa.me/91${p.phone}" target="_blank" class="result-winner-wa-link">${p.name || '—'}</a>`
+          : `<span>${p.name || '—'}</span>`;
+
+        return `
+          <div class="result-participant-row">
+            ${d.entryType === 'multiple'
+              ? `<div class="result-participant-num">${i + 1}</div>` : ''}
+            <div class="result-participant-info">
+              <div class="result-participant-name">${nameDisplay}</div>
+              <div class="result-participant-detail">
+                ${p.block && p.flatNumber ? p.block + ' - ' + p.flatNumber : (p.block || p.flatNumber || '')}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      const adminButtons = isAdmin() ? `
+        <div class="result-admin-actions">
+          <button class="result-edit-btn"
+            onclick="startEditResult('${d.id}', '${sportName.replace(/'/g, "\\'")}')">✏️ Edit</button>
+          <button class="result-delete-btn"
+            onclick="confirmDeleteResult('${d.id}', '${sportName.replace(/'/g, "\\'")}')">🗑️ Delete</button>
+        </div>` : '';
 
       return `
-        <div class="result-participant-row">
-          ${d.entryType === 'multiple'
-            ? `<div class="result-participant-num">${i + 1}</div>` : ''}
-          <div class="result-participant-info">
-            <div class="result-participant-name">${nameDisplay}</div>
-            <div class="result-participant-detail">
-              ${p.block && p.flatNumber ? p.block + ' - ' + p.flatNumber : (p.block || p.flatNumber || '')}
+        <div class="result-entry-card" id="result-card-${d.id}">
+          <div class="result-entry-header">
+            <div class="result-entry-header-left">
+              <div class="result-medal-type-label" style="color:${medalColour}">
+                ${medalEmoji} ${d.medalType}
+              </div>
             </div>
+            ${adminButtons}
           </div>
+          <div class="result-participants-section">${participantRows}</div>
+          ${d.note ? `<div class="result-note">💬 ${d.note}</div>` : ''}
         </div>`;
     }).join('');
 
-    const adminButtons = isAdmin() ? `
-      <div class="result-admin-actions">
-        <button class="result-edit-btn"
-          onclick="startEditResult('${d.id}', '${sportName.replace(/'/g, "\\'")}')">✏️ Edit</button>
-        <button class="result-delete-btn"
-          onclick="confirmDeleteResult('${d.id}', '${sportName.replace(/'/g, "\\'")}')">🗑️ Delete</button>
-      </div>` : '';
-
     return `
-      <div class="result-entry-card" id="result-card-${d.id}">
-        <div class="result-entry-header">
-          <div class="result-entry-header-left">
-            ${categoryLine ? `<div class="result-category-line">${categoryLine}</div>` : ''}
-            <div class="result-medal-type-label" style="color:${medalColour}">
-              ${medalEmoji} ${d.medalType}
-            </div>
-          </div>
-          ${adminButtons}
-        </div>
-        <div class="result-participants-section">${participantRows}</div>
-        ${d.note ? `<div class="result-note">💬 ${d.note}</div>` : ''}
+      <div class="result-category-group">
+        ${groupKey ? `<div class="result-category-group-header">${groupKey}</div>` : ''}
+        <div class="sport-result-cards">${cardsHtml}</div>
       </div>`;
   }).join('');
 
   container.innerHTML = `
-    <div class="sport-results-inner">
-      <div class="sport-result-cards">${cardsHtml}</div>
-    </div>`;
+    <div class="sport-results-inner">${groupsHtml}</div>`;
 }
 
 // ── Medal tally chart renderer ──
