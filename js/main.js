@@ -1492,7 +1492,7 @@ async function loadRegistrations() {
           <button class="reg-delete-btn" title="Delete registration">🗑️</button>
         `;
         card.querySelector('.reg-delete-btn').addEventListener('click', () => {
-          openDeleteModal(d.id, sportLabel);
+          openDeleteModal(d.id, sportLabel, d.sport);
         });
         body.appendChild(card);
       });
@@ -2213,10 +2213,17 @@ function switchTab(tabName) {
 }
 
 // ── Delete registration ──
-function openDeleteModal(id, sportName) {
+async function openDeleteModal(id, sportLabel, sportKey) {
+  try {
+    const settingSnap = await getDoc(doc(db, 'sportSettings', sportKey));
+    if (settingSnap.exists() && settingSnap.data().registrationOpen === false) {
+      showToast('Registration for this sport is closed — deletions are not allowed.', true);
+      return;
+    }
+  } catch (e) { /* allow deletion on network error */ }
   deleteTargetId   = id;
-  deleteTargetName = sportName;
-  document.getElementById('modal-sport-name').textContent = sportName;
+  deleteTargetName = sportLabel;
+  document.getElementById('modal-sport-name').textContent = sportLabel;
   document.getElementById('delete-reason').value = '';
   document.getElementById('delete-modal').classList.remove('hidden');
 }
@@ -2245,6 +2252,16 @@ async function confirmDelete() {
       blockKey = blockMatch
         ? blockMatch[1].toUpperCase()
         : (data.block && /^[A-Fa-f]$/i.test(data.block) ? data.block.toUpperCase() : 'Unknown');
+
+      // Failsafe: re-check registration status before deleting
+      try {
+        const settingSnap = await getDoc(doc(db, 'sportSettings', sportName));
+        if (settingSnap.exists() && settingSnap.data().registrationOpen === false) {
+          closeDeleteModal();
+          showToast('Registration for this sport is closed — deletions are not allowed.', true);
+          return;
+        }
+      } catch (e) { /* allow deletion on network error */ }
     }
 
     await deleteDoc(regRef);
