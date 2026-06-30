@@ -3684,6 +3684,31 @@ function renderResultsFromSummary(summary) {
 
     listEl.appendChild(row);
   });
+
+  // Quiz is not in SPORTS array — render it separately if results exist
+  const quizData = bySport['Quiz'] || { hasResults: false, count: 0 };
+  if (quizData.hasResults) {
+    const quizRow = document.createElement('div');
+    quizRow.className = 'results-sport-row';
+    quizRow.id        = 'sport-row-Quiz';
+    quizRow.innerHTML = `
+      <div class="results-sport-row-header" onclick="toggleSportResults('Quiz')">
+        <div class="results-sport-row-left">
+          <span class="results-sport-row-emoji">🧠</span>
+          <div class="results-sport-row-info">
+            <div class="results-sport-row-name">Quiz</div>
+            <div class="results-sport-row-meta">
+              ${quizData.count} result${quizData.count !== 1 ? 's published' : ' published'}
+            </div>
+          </div>
+        </div>
+        <div class="results-sport-row-right">
+          <span class="results-chevron" id="chevron-Quiz">▼</span>
+        </div>
+      </div>
+      <div class="results-sport-content" id="content-Quiz" style="display:none;"></div>`;
+    listEl.appendChild(quizRow);
+  }
 }
 
 // ── Toggle sport results expand/collapse ──
@@ -4373,6 +4398,73 @@ async function saveResult() {
   }
 }
 
+async function publishQuizResults() {
+  showLoading(true);
+  try {
+    const snap = await getDocs(collection(db, 'quizScores'));
+    const allScores = snap.docs
+      .map(d => d.data())
+      .filter(s => (s.totalPoints || 0) > 0)
+      .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+
+    if (allScores.length === 0) {
+      showToast('No quiz scores found to publish', true);
+      return;
+    }
+
+    // Find up to 3 distinct score tiers (ties share a medal)
+    const distinctScores = [...new Set(allScores.map(s => s.totalPoints || 0))];
+    const medalNames     = ['Gold', 'Silver', 'Bronze'];
+    const assignments    = [];
+
+    for (let i = 0; i < Math.min(3, distinctScores.length); i++) {
+      const score      = distinctScores[i];
+      const group      = allScores.filter(s => (s.totalPoints || 0) === score);
+      const participants = group.map(s => {
+        const flat  = s.flat || '';
+        const m     = flat.match(/^([A-Fa-f])-(\d+)/) || flat.match(/Block\s*([A-Fa-f])[^0-9]*(\d+)/i);
+        return {
+          name:       s.name || '',
+          block:      m ? m[1].toUpperCase() : 'A',
+          flatNumber: m ? m[2] : '',
+          phone:      s.phone || ''
+        };
+      });
+      assignments.push({ medalType: medalNames[i], participants, score });
+    }
+
+    // Delete existing Quiz results and replace
+    const existingSnap = await getDocs(query(collection(db, 'results'), where('sport', '==', 'Quiz')));
+    await Promise.all(existingSnap.docs.map(d => deleteDoc(d.ref)));
+
+    for (const { medalType, participants, score } of assignments) {
+      await addDoc(collection(db, 'results'), {
+        sport:       'Quiz',
+        sportEmoji:  '🧠',
+        category:    '',
+        subCategory: '',
+        medalType,
+        entryType:   participants.length > 1 ? 'multiple' : 'single',
+        participants,
+        note:        `${score} correct answers`,
+        createdAt:   serverTimestamp(),
+        updatedAt:   serverTimestamp()
+      });
+    }
+
+    await rebuildResultsSummary();
+    sportResultsCache['Quiz'] = null;
+
+    const totalWinners = assignments.reduce((s, a) => s + a.participants.length, 0);
+    showToast(`Quiz results published! ${totalWinners} winner${totalWinners !== 1 ? 's' : ''} across ${assignments.length} medals.`);
+  } catch(err) {
+    console.error(err);
+    showToast('Error publishing quiz results', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
 function clearResultForm(keepCategoryFields = false) {
   const alwaysClear = ['res-sport-select', 'res-medal-type', 'res-note'];
   const conditionalClear = ['res-category', 'res-subcategory'];
@@ -4561,6 +4653,7 @@ window.selectResultEntryType    = selectResultEntryType;
 window.addResultParticipant     = addResultParticipant;
 window.removeResultParticipant  = removeResultParticipant;
 window.saveResult               = saveResult;
+window.publishQuizResults       = publishQuizResults;
 window.clearResultForm          = clearResultForm;
 window.onResultSportChange      = onResultSportChange;
 window.startEditResult          = startEditResult;
